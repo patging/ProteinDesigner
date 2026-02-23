@@ -3,8 +3,8 @@ import { Box } from "@mui/material";
 
 function App() {
   return (
-    <Box sx={{ width: "900px", height: "900px" }}>
-      <Box sx={{ mx: "300px" }}>
+    <Box sx={{ width: "100%" }}>
+      <Box sx={{ display: "flex", justifyContent: "center" }}>
         <LoginForm />
       </Box>
     </Box>
