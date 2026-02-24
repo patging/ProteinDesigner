@@ -5,7 +5,7 @@ import { FormSubmitButton } from "./FormComponents/FormSubmitButton";
 import { FormHeader } from "./FormComponents/FormHeader";
 import { FormFooter } from "./FormComponents/FormFooter";
 
-export function LoginForm() {
+export function SignUpForm() {
   return (
     <Box
       sx={{
@@ -17,11 +17,16 @@ export function LoginForm() {
       }}
     >
       <FormHeader
-        TopText="Protein Designer"
-        BottomText="Design new proteins with AI quick and easy!"
+        TopText="Create your account"
+        BottomText="Enter your details to get started with Protein Designer!"
       />
 
       <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+        <FormTextField
+          labelText="Full Name"
+          placeholder="Enter your full name"
+          isPassword={false}
+        />
         <FormTextField
           labelText="Email"
           placeholder="name@institution.com"
@@ -35,12 +40,12 @@ export function LoginForm() {
         <FormSubmitButton
           ButtonText="Log In"
           OnClick={() => {
-            console.log("clicked the login");
+            console.log("clicked the sign up");
           }}
         />
       </Box>
 
-      <FormFooter askToSignUp={true} />
+      <FormFooter askToSignUp={false} />
     </Box>
   );
 }
