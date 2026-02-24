@@ -1,12 +1,17 @@
-import { LoginForm } from "./components/LoginForm";
+import { AppRouter } from "./components/AppRouter";
 import { Box } from "@mui/material";
 
 function App() {
   return (
-    <Box sx={{ width: "100%" }}>
-      <Box sx={{ display: "flex", justifyContent: "center" }}>
-        <LoginForm />
-      </Box>
+    <Box
+      sx={{
+        width: "100%",
+        display: "flex",
+        flexDirection: "row",
+        justifyContent: "center",
+      }}
+    >
+      <AppRouter />;
     </Box>
   );
 }
