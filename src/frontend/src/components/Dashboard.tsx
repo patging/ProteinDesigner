@@ -1,7 +1,8 @@
-import { Box, Typography } from "@mui/material";
+import { Box, InputLabel, Typography } from "@mui/material";
 import { grey } from "@mui/material/colors";
-import { type SvgIconProps } from "@mui/material";
+import { type SvgIconProps, MenuItem, FormControl } from "@mui/material";
 import { ThemeProvider } from "@mui/material/styles";
+import Select from "@mui/material/Select";
 import SpaceDashboardOutlinedIcon from "@mui/icons-material/SpaceDashboardOutlined";
 import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
@@ -14,6 +15,11 @@ interface DashboardLinkProps {
   labelText: string;
   linkTo: string;
   children: React.ReactNode & SvgIconProps; // children that are MUI icons
+}
+
+interface DashboardSelectProps {
+  labelText: string;
+  options: string[];
 }
 
 function DashboardLink({ labelText, linkTo, children }: DashboardLinkProps) {
@@ -89,10 +95,55 @@ function DashboardPanel() {
   );
 }
 
+// To:Do needs onchange, and state association
+function DashboardSelect({ labelText, options }: DashboardSelectProps) {
+  return (
+    <FormControl sx={{ mr: "12px" }}>
+      <Select
+        value={""}
+        displayEmpty
+        sx={{ width: "128px", maxHeight: "32px", bgcolor: grey[200] }}
+        inputProps={{ "aria-label": "Without label" }}
+      >
+        <MenuItem value="">
+          <em>None</em>
+        </MenuItem>
+        {options.map((val) => (
+          <MenuItem value={val}>{val}</MenuItem>
+        ))}
+      </Select>
+    </FormControl>
+  );
+}
+
+function DashboardTable() {
+  return (
+    <Box sx={{ width: "900px" }}>
+      <Typography variant={"h1"} sx={{ fontSize: "32pt", my: "16px" }}>
+        Jobs
+      </Typography>
+      <Box>
+        <DashboardSelect labelText="Tester" options={["Test1", "Test2"]} />
+        <DashboardSelect labelText="Tester" options={["Test1", "Test2"]} />
+        <DashboardSelect labelText="Tester" options={["Test1", "Test2"]} />
+      </Box>
+    </Box>
+  );
+}
+
 export function Dashboard() {
   return (
     <ThemeProvider theme={DashboardTheme}>
-      <DashboardPanel />
+      <Box
+        sx={{
+          width: "100%",
+          display: "flex",
+          justifyContent: "space-between",
+        }}
+      >
+        <DashboardPanel />
+        <DashboardTable />
+      </Box>
     </ThemeProvider>
   );
 }
