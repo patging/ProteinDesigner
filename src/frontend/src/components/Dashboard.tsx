@@ -1,14 +1,14 @@
 import { Box, Typography } from "@mui/material";
 import { grey } from "@mui/material/colors";
-
+import { type SvgIconProps } from "@mui/material";
+import { ThemeProvider } from "@mui/material/styles";
 import SpaceDashboardOutlinedIcon from "@mui/icons-material/SpaceDashboardOutlined";
 import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import ExitToAppOutlinedIcon from "@mui/icons-material/ExitToAppOutlined";
-
 import { useLocation, Link } from "react-router";
 
-import { type SvgIconProps } from "@mui/material";
+import { DashboardTheme } from "../themes/DashboardTheme";
 
 interface DashboardLinkProps {
   labelText: string;
@@ -50,7 +50,7 @@ function DashboardLink({ labelText, linkTo, children }: DashboardLinkProps) {
   );
 }
 
-export function Dashboard() {
+function DashboardPanel() {
   return (
     <Box
       sx={{
@@ -86,5 +86,13 @@ export function Dashboard() {
         </DashboardLink>
       </Box>
     </Box>
+  );
+}
+
+export function Dashboard() {
+  return (
+    <ThemeProvider theme={DashboardTheme}>
+      <DashboardPanel />
+    </ThemeProvider>
   );
 }

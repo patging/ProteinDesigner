@@ -1,5 +1,6 @@
 import { AppRouter } from "./components/AppRouter";
 import { Box } from "@mui/material";
+import "./App.css";
 
 function App() {
   return (
@@ -11,7 +12,7 @@ function App() {
         justifyContent: "center",
       }}
     >
-      <AppRouter />;
+      <AppRouter />
     </Box>
   );
 }
