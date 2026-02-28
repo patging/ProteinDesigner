@@ -1,4 +1,13 @@
-import { Box, InputLabel, Typography } from "@mui/material";
+import {
+  Box,
+  Table,
+  TableBody,
+  TableContainer,
+  TableCell,
+  TableHead,
+  TableRow,
+  Typography,
+} from "@mui/material";
 import { grey } from "@mui/material/colors";
 import { type SvgIconProps, MenuItem, FormControl } from "@mui/material";
 import { ThemeProvider } from "@mui/material/styles";
@@ -20,6 +29,21 @@ interface DashboardLinkProps {
 interface DashboardSelectProps {
   labelText: string;
   options: string[];
+}
+
+/**
+ * Temporary improvised type for the
+ * purposes of making a shell for the
+ * aesthetic quality
+ */
+type Job = {
+  name: string;
+  status: string;
+  timeCreated: string;
+  proteinTarget: string;
+};
+interface InnerTableProps {
+  jobs: Job[];
 }
 
 function DashboardLink({ labelText, linkTo, children }: DashboardLinkProps) {
@@ -116,17 +140,113 @@ function DashboardSelect({ labelText, options }: DashboardSelectProps) {
   );
 }
 
-function DashboardTable() {
+function InnerTable({ jobs }: InnerTableProps) {
   return (
-    <Box sx={{ width: "900px" }}>
+    <TableContainer
+      sx={{
+        border: `1px solid ${grey[400]}`,
+        borderRadius: "15px",
+        maxHeight: "407px",
+      }}
+    >
+      <Table>
+        <TableHead>
+          <TableCell>Job Name</TableCell>
+          <TableCell>Status</TableCell>
+          <TableCell>Created</TableCell>
+          <TableCell>Protein Target</TableCell>
+        </TableHead>
+        <TableBody>
+          {jobs.map((job: Job, _: Number) => (
+            <TableRow>
+              <TableCell>{job.name}</TableCell>
+              <TableCell>{job.status}</TableCell>
+              <TableCell>{job.timeCreated}</TableCell>
+              <TableCell>{job.proteinTarget}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </TableContainer>
+  );
+}
+
+function DashboardTable() {
+  const job: Job[] = [
+    {
+      name: "Job1",
+      status: "Completed",
+      timeCreated: "01/29/2026",
+      proteinTarget: "ABCDED",
+    },
+    {
+      name: "Job2",
+      status: "Pending",
+      timeCreated: "07/23/2021",
+      proteinTarget: "DSDD",
+    },
+    {
+      name: "Job3",
+      status: "Missing",
+      timeCreated: "05/01/2024",
+      proteinTarget: "WEEEW",
+    },
+    {
+      name: "Job4",
+      status: "Failed",
+      timeCreated: "11/12/2017",
+      proteinTarget: "ATCG",
+    },
+    {
+      name: "Job2",
+      status: "Pending",
+      timeCreated: "07/23/2021",
+      proteinTarget: "DSDD",
+    },
+    {
+      name: "Job3",
+      status: "Missing",
+      timeCreated: "05/01/2024",
+      proteinTarget: "WEEEW",
+    },
+    {
+      name: "Job4",
+      status: "Failed",
+      timeCreated: "11/12/2017",
+      proteinTarget: "ATCG",
+    },
+    {
+      name: "Job2",
+      status: "Pending",
+      timeCreated: "07/23/2021",
+      proteinTarget: "DSDD",
+    },
+    {
+      name: "Job3",
+      status: "Missing",
+      timeCreated: "05/01/2024",
+      proteinTarget: "WEEEW",
+    },
+    {
+      name: "Job4",
+      status: "Failed",
+      timeCreated: "11/12/2017",
+      proteinTarget: "ATCG",
+    },
+  ];
+
+  return (
+    <Box sx={{ width: "1000px" }}>
       <Typography variant={"h1"} sx={{ fontSize: "32pt", my: "16px" }}>
         Jobs
       </Typography>
-      <Box>
+      <Box sx={{ mb: "20px" }}>
         <DashboardSelect labelText="Tester" options={["Test1", "Test2"]} />
         <DashboardSelect labelText="Tester" options={["Test1", "Test2"]} />
         <DashboardSelect labelText="Tester" options={["Test1", "Test2"]} />
       </Box>
+
+      <InnerTable jobs={job} />
     </Box>
   );
 }
@@ -139,6 +259,7 @@ export function Dashboard() {
           width: "100%",
           display: "flex",
           justifyContent: "space-between",
+          px: "24px",
         }}
       >
         <DashboardPanel />
