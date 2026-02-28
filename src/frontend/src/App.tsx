@@ -11,7 +11,7 @@ function App() {
         justifyContent: "center",
       }}
     >
-      <AppRouter />;
+      <AppRouter />
     </Box>
   );
 }
