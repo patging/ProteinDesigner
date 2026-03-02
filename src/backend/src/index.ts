@@ -82,7 +82,8 @@ app.post("/signup", async (req, res) => {
     return res.json({
         user: {
             id: data.user.id,
-            email: data.user.email
+            email: data.user.email,
+            name: name
         }
     })
 
@@ -112,10 +113,15 @@ app.post("/login", async (req, res) => {
         return res.status(400).json({message: "no user"})
     }
 
+    const {data: userProfile, error: error2} = await supabaseService.from("user_profile").select("user_name").eq("user_id", data.user.id).single();
+    if(error2){
+        return res.status(401).json({message: "Profile fetch failed"});
+    }
     return res.json({
         user: {
             id: data.user.id,
-            email: data.user.email
+            email: data.user.email,
+            name: userProfile.user_name
         }
     })
     
