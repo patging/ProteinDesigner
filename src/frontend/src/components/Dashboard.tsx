@@ -8,7 +8,7 @@ import {
   TableRow,
   Typography,
 } from "@mui/material";
-import { grey } from "@mui/material/colors";
+import { blue, grey } from "@mui/material/colors";
 import { type SvgIconProps, MenuItem, FormControl } from "@mui/material";
 import { ThemeProvider } from "@mui/material/styles";
 import Select from "@mui/material/Select";
@@ -16,9 +16,10 @@ import SpaceDashboardOutlinedIcon from "@mui/icons-material/SpaceDashboardOutlin
 import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import ExitToAppOutlinedIcon from "@mui/icons-material/ExitToAppOutlined";
+import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import { useLocation, Link } from "react-router";
-
 import { DashboardTheme } from "../themes/DashboardTheme";
+import { JobStatus } from "../types/JobStatus";
 
 interface DashboardLinkProps {
   labelText: string;
@@ -146,7 +147,8 @@ function InnerTable({ jobs }: InnerTableProps) {
       sx={{
         border: `1px solid ${grey[400]}`,
         borderRadius: "15px",
-        maxHeight: "407px",
+        minHeight: "407px",
+        maxHeight: "600px",
       }}
     >
       <Table>
@@ -160,13 +162,49 @@ function InnerTable({ jobs }: InnerTableProps) {
           {jobs.map((job: Job, _: Number) => (
             <TableRow>
               <TableCell>{job.name}</TableCell>
-              <TableCell>{job.status}</TableCell>
+              <TableCell
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                }}
+              >
+                {job.status}{" "}
+                {(job.status.toLocaleLowerCase() === JobStatus.COMPLETED ||
+                  job.status.toLocaleLowerCase() === JobStatus.FAILED) && (
+                  <OpenInNewIcon
+                    sx={{
+                      height: "20px",
+                      width: "20px",
+                      color: "black",
+                      ml: "4px",
+                    }}
+                  />
+                )}
+              </TableCell>
               <TableCell>{job.timeCreated}</TableCell>
               <TableCell>{job.proteinTarget}</TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
+      {jobs.length === 0 && (
+        <Typography
+          variant="h6"
+          sx={{ ml: "16px", mt: "6px", fontWeight: "normal" }}
+        >
+          No jobs found. Create a new one{" "}
+          <Link
+            style={{
+              color: blue[800],
+              fontWeight: 500,
+              textDecoration: "none",
+            }}
+            to="/login"
+          >
+            here
+          </Link>{" "}
+        </Typography>
+      )}
     </TableContainer>
   );
 }
@@ -236,7 +274,7 @@ function DashboardTable() {
   ];
 
   return (
-    <Box sx={{ width: "1000px" }}>
+    <Box sx={{ width: "100%" }}>
       <Typography variant={"h1"} sx={{ fontSize: "32pt", my: "16px" }}>
         Jobs
       </Typography>
@@ -257,9 +295,11 @@ export function Dashboard() {
       <Box
         sx={{
           width: "100%",
+          height: "100%",
           display: "flex",
           justifyContent: "space-between",
           px: "24px",
+          gap: "48px",
         }}
       >
         <DashboardPanel />
