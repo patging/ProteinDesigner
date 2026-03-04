@@ -2,7 +2,7 @@ import { useLocation } from "react-router-dom";
 import { Viewer } from "@e-infra/react-molstar-wrapper";
 import type { Protein } from "@e-infra/react-molstar-wrapper";
 import "@e-infra/react-molstar-wrapper/style.css";
-import { useState, ChangeEvent } from "react";
+import { useState } from "react";
 
 export function TestMolstar() {
   const location = useLocation();
