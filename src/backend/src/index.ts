@@ -4,6 +4,7 @@ import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 import {z} from "zod"
 import { createClient } from "@supabase/supabase-js";
+import multer from "multer";
 
 
 dotenv.config() // load env variables
@@ -128,6 +129,52 @@ app.post("/login", async (req, res) => {
 })
 
 
+// -------- Neurosnap API Proxy Endpoint --------
+
+// Multer: store uploaded files directly to memory as Buffer object
+const upload = multer({ storage: multer.memoryStorage() });
+
+/**
+ * POST /api/submit-rfdiffusion3
+ *
+ * Receives a .pdb file + RFdiffusion3 parameters from the frontend,
+ * then proxies the request to Neurosnap's API (keeping the API key server-side).
+ */
+app.post("/api/submit-rfdiffusion3", upload.single("pdbFile"), async (req, res) => {
+    if (!req.file) return res.status(400).json({ message: "No PDB file provided" });
+
+    const { contig, numberDesigns = "1", timesteps = "10", stepScale = "1.5" } = req.body;
+    if (!contig) return res.status(400).json({ message: "Contig is required" });
+
+    const apiKey = process.env.NEUROSNAP_API_KEY;
+    if (!apiKey) return res.status(500).json({ message: "NEUROSNAP_API_KEY is not configured on the server" });
+
+    try {
+        const formData = new FormData();
+        formData.append("Input Structure", new Blob([new Uint8Array(req.file.buffer)]), req.file.originalname);
+        formData.append("Contig", contig);
+        formData.append("Number Designs", numberDesigns);
+        formData.append("Timesteps", timesteps);
+        formData.append("Step Scale", stepScale);
+
+        const response = await fetch("https://neurosnap.ai/api/job/submit/RFdiffusion3", {
+            method: "POST",
+            headers: { "X-API-KEY": apiKey },
+            body: formData,
+        });
+
+        const payload = await response.json();
+        if (!response.ok) {
+            return res.status(response.status).json({ message: (payload as any).error || response.statusText });
+        }
+
+        return res.json({ jobId: payload });
+    } catch (err: any) {
+        console.error("Neurosnap proxy error:", err);
+        return res.status(500).json({ message: err.message || "Unexpected error" });
+    }
+});
+// -------- Neurosnap API Proxy Endpoint --------
 
 
 
