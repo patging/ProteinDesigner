@@ -4,13 +4,14 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/index.ts"
+    "dev": "tsx watch --env-file=.env src/index.ts"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@azure/storage-blob": "^12.31.0",
     "@supabase/supabase-js": "^2.98.0",
     "@types/multer": "^2.0.0",
     "cookie-parser": "^1.4.7",

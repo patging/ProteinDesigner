@@ -1,15 +1,11 @@
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import dotenv from "dotenv";
 import {z} from "zod"
 import { createClient } from "@supabase/supabase-js";
 import multer from "multer";
 
-
-dotenv.config() // load env variables
 const app = express();
-
 
 app.use(express.json())
 app.use(cookieParser());
@@ -17,7 +13,6 @@ app.use(cookieParser());
 app.use(cors({origin: "http://localhost:5173", credentials : true}))
 
 app.get("/health", (req, res) => res.json({ok: true}))
-
 
 
 if(!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY || !process.env.SUPABASE_SERVICE_ROLE_KEY){
