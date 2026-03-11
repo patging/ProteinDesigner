@@ -12,7 +12,6 @@ export function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [success, setSuccess] = useState<boolean | null>(null);
-  const [name, setName] = useState("")
   const navigate = useNavigate();
   async function handleLogin() {
     setSuccess(null);
