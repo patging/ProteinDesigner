@@ -48,7 +48,6 @@ interface InnerTableProps {
 }
 
 function DashboardLink({ labelText, linkTo, children }: DashboardLinkProps) {
-  const location = useLocation();
   const backgroundColor = location.pathname == linkTo ? grey[200] : "white";
 
   return (
@@ -82,6 +81,9 @@ function DashboardLink({ labelText, linkTo, children }: DashboardLinkProps) {
 }
 
 function DashboardPanel() {
+  const location = useLocation();
+  const name = location.state?.name;
+  console.log("name" + " " + name);
   return (
     <Box
       sx={{
@@ -99,6 +101,9 @@ function DashboardPanel() {
         </Typography>
         <Typography variant="h6" sx={{ fontSize: "12pt", color: grey[600] }}>
           AI-powered protein design
+        </Typography>
+        <Typography variant="h5" sx={{ fontSize: "14pt", marginTop: "20px"}}>
+          Welcome, {name}
         </Typography>
       </Box>
 

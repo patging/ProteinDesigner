@@ -114,6 +114,7 @@ app.post("/login", async (req, res) => {
     }
 
     const {data: userProfile, error: error2} = await supabaseService.from("user_profile").select("user_name").eq("user_id", data.user.id).single();
+    console.log(userProfile);
     if(error2){
         return res.status(401).json({message: "Profile fetch failed"});
     }

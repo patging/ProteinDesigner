@@ -12,6 +12,7 @@ export function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [success, setSuccess] = useState<boolean | null>(null);
+  const [name, setName] = useState("")
   const navigate = useNavigate();
   async function handleLogin() {
     setSuccess(null);
@@ -25,15 +26,19 @@ export function LoginForm() {
         body: JSON.stringify({ email, password }),
       });
       const login_response = await res.json();
+      const response = JSON.stringify(login_response);
+      const parsed = JSON.parse(response);
       if (!res.ok) {
         console.log("eroor with handleLogin");
         setSuccess(false);
         throw new Error(login_response.message || "problem with login");
       } else {
         console.log("login was a success");
+        console.log("login name" + " " + parsed.user.name)
+        console.log("login response" + " " + parsed);
         setSuccess(true);
         navigate("/home", {
-          state: { name: login_response.name },
+          state: { name: parsed.user.name },
         });
       }
     } catch (e) {
