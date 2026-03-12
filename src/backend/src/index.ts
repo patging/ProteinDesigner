@@ -4,8 +4,14 @@ import cookieParser from "cookie-parser";
 import { z } from "zod";
 import multer from "multer";
 
+import { taskQueue } from "../api/TaskQueue.js";
+
 import { supabaseAnon, supabaseService } from "../api/supabaseClient.js";
-import { insertNewJob, WorkflowJobStatus } from "../api/supabaseService.js";
+import {
+  insertNewJob,
+  updateJobStatus,
+  WorkflowJobStatus,
+} from "../api/supabaseService.js";
 
 const app = express();
 
@@ -174,13 +180,17 @@ app.post(
           .json({ message: (payload as any).error || response.statusText });
       }
       // inserting into DB and then pushing to queue
-
       const jobData = await insertNewJob(
-        "none.com",
+        "none.com", // UPDATE W/ BLOB
         contig,
         WorkflowJobStatus.INQUEUE,
         payload,
       );
+      // TO:DO ADD THE INITIAL PUSH TO THE JOB
+      taskQueue.push({
+        workflowJobId: jobData.job_id,
+        neurosnapJobId: payload,
+      });
 
       // returning the ID
       return res.json({ jobId: payload });

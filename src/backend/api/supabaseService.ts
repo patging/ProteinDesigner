@@ -36,9 +36,9 @@ export async function getStatus(
 
 export async function insertNewJob(
   job_input_file_url: string,
-  job_contig_string: string,
+  job_contig_string: string | null,
   job_status: WorkflowJobStatus,
-  job_api_job_id: string,
+  job_api_job_id: string | null,
 ): Promise<JobModel> {
   const USERID = "4a35f59d-6452-4f2f-8643-897613bad336"; // VERY TEMPORARY TO:DO DELETE
 
@@ -76,7 +76,7 @@ export async function updateJobStatus(
 
   const { error } = await supabaseService
     .from("jobs")
-    .update({ job_status: status_id })
+    .update({ job_status_id: status_id })
     .eq("job_id", workflowJobID);
 
   if (error) {
@@ -113,7 +113,7 @@ export async function updateJobEndTime(
 }
 
 export async function insertJobResults(
-  job_id: string,
+  workflow_job_id: string,
   job_result_file_url: string,
   job_result_score: number,
   job_result_is_favorite: boolean,
@@ -121,7 +121,7 @@ export async function insertJobResults(
   const { data, error } = await supabaseService
     .from("job_results")
     .insert({
-      job_id: job_id,
+      job_id: workflow_job_id,
       job_result_file_url: job_result_file_url,
       job_result_score: job_result_score,
       job_result_is_favorite: job_result_is_favorite,
@@ -134,7 +134,9 @@ export async function insertJobResults(
 
   const results = data as unknown[] as JobResultsModel[];
   if (results.length === 0) {
-    throw new Error(`No rows found when submitted. workflowjobID=${job_id}`);
+    throw new Error(
+      `No rows found when submitted. workflowjobID=${workflow_job_id}`,
+    );
   }
 
   return results[0]!;

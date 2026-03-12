@@ -7,7 +7,7 @@ import * as web from "node:stream/web";
  * Source : https://neurosnap.ai/blog/post/full-neurosnap-api-tutorial-the-quick-easy-api-for-bioinformatics/66b00dacec3f2aa9b4be703a
  * go to the section for /api/job/status/JOB_ID
  */
-enum NeurosnapJobStatus {
+export enum NeurosnapJobStatus {
   PENDING = "pending",
   RUNNING = "running",
   FAILED = "failed",

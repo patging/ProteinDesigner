@@ -20,6 +20,7 @@
     "express": "^5.2.1",
     "fastq": "^1.20.1",
     "multer": "^2.1.0",
+    "uuid": "^13.0.0",
     "zod": "^4.3.6"
   },
   "devDependencies": {
