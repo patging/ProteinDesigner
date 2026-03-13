@@ -17,7 +17,7 @@ import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import ExitToAppOutlinedIcon from "@mui/icons-material/ExitToAppOutlined";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
-import { useLocation, Link, useNavigate } from "react-router-dom";
+import { useLocation, Link, useNavigate } from "react-router";
 import { DashboardTheme } from "../themes/DashboardTheme";
 import { JobStatus } from "../types/JobStatus";
 import {supabase} from "../supabase"
