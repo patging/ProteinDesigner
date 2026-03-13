@@ -30,6 +30,8 @@ export function SignUpForm() {
         credentials: "include",
       });
       const user_data = await res.json();
+      const response = JSON.stringify(user_data);
+      const parsed = JSON.parse(response);
       if (!res.ok) {
         console.log("signup failed");
         if (user_data.message) {
@@ -41,8 +43,9 @@ export function SignUpForm() {
         }
       }
       console.log("signup was a success");
+      console.log("name" + " " + parsed.user.name)
       navigate("/home", {
-        state: { name: user_data.name },
+        state: { name: parsed.user.name },
       });
     } catch (e) {
       console.log(e);
