@@ -20,6 +20,8 @@ import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import { DashboardTheme } from "../themes/DashboardTheme";
 import { JobStatus } from "../types/JobStatus";
+import {supabase} from "../supabase"
+
 
 interface DashboardLinkProps {
   labelText: string;
@@ -92,14 +94,13 @@ function DashboardPanel() {
   const name = location.state?.name;
   const navigate = useNavigate();
   const handleLogout = async () => {
-    const res = await fetch("http://localhost:4000/logout", {
-      method: "POST",
-    });
-    if (!res.ok) {
-      console.log("Error fetching signout response from backend");
+    const {error} = await supabase.auth.signOut();
+    if(error){
+      console.log("There is an error signing out, check handleLogout in Dashboard.tsx");
+      return;
     }
-    console.log("successfully signed out");
-    navigate("/");
+    console.log("Logout was successful.")
+    navigate("/", { replace: true });
   };
   console.log("name" + " " + name);
   return (
