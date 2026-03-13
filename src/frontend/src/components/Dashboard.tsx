@@ -17,13 +17,14 @@ import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import ExitToAppOutlinedIcon from "@mui/icons-material/ExitToAppOutlined";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
-import { useLocation, Link } from "react-router";
+import { useLocation, Link, useNavigate } from "react-router-dom";
 import { DashboardTheme } from "../themes/DashboardTheme";
 import { JobStatus } from "../types/JobStatus";
 
 interface DashboardLinkProps {
   labelText: string;
   linkTo: string;
+  onClick?: () => void;
   children: React.ReactNode & SvgIconProps; // children that are MUI icons
 }
 
@@ -47,17 +48,19 @@ interface InnerTableProps {
   jobs: Job[];
 }
 
-function DashboardLink({ labelText, linkTo, children }: DashboardLinkProps) {
+function DashboardLink({ labelText, linkTo, children, onClick }: DashboardLinkProps) {
   const backgroundColor = location.pathname == linkTo ? grey[200] : "white";
 
   return (
     <Box
+    onClick = {onClick}
       sx={{
         width: "288px",
         height: "60px",
         backgroundColor: { backgroundColor },
         display: "flex",
         alignItems: "center",
+
       }}
     >
       {children}
@@ -66,15 +69,19 @@ function DashboardLink({ labelText, linkTo, children }: DashboardLinkProps) {
           ml: "12px",
         }}
       >
+      {onClick ? 
+      (<Typography variant="h6" style = {{cursor: "pointer"}}>{labelText}</Typography>) :
+      (
         <Link
-          to={linkTo}
-          style={{
-            textDecoration: "None",
-            color: "black",
-          }}
-        >
-          <Typography variant="h6">{labelText}</Typography>
-        </Link>
+        to={linkTo}
+        style={{
+          textDecoration: "None",
+          color: "black",
+        }}
+      >
+        <Typography variant="h6">{labelText}</Typography>
+      </Link>
+      )}
       </Box>
     </Box>
   );
@@ -83,6 +90,17 @@ function DashboardLink({ labelText, linkTo, children }: DashboardLinkProps) {
 function DashboardPanel() {
   const location = useLocation();
   const name = location.state?.name;
+  const navigate = useNavigate();
+  const handleLogout = async () => {
+    const res = await fetch("http://localhost:4000/logout", {
+      method: "POST",
+    });
+    if (!res.ok) {
+      console.log("Error fetching signout response from backend");
+    }
+    console.log("successfully signed out");
+    navigate("/");
+  };
   console.log("name" + " " + name);
   return (
     <Box
@@ -117,8 +135,8 @@ function DashboardPanel() {
         <DashboardLink labelText="Settings" linkTo="/signup">
           <SettingsOutlinedIcon />
         </DashboardLink>
-        <DashboardLink labelText="Log Out" linkTo="/signup">
-          <ExitToAppOutlinedIcon />
+        <DashboardLink labelText="Log Out" onClick={handleLogout} linkTo="">
+          <ExitToAppOutlinedIcon/>
         </DashboardLink>
       </Box>
     </Box>

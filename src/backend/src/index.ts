@@ -128,6 +128,20 @@ app.post("/login", async (req, res) => {
     
 })
 
+app.post("/logout", async (req, res) => {
+    const {error} = await supabaseAnon.auth.signOut();
+    if(error){
+        console.log(error.message || "Error with signing out")
+        return res.status(500).json({message: "Error with signing out"})
+    }
+    
+    return res.status(200).json(
+        {
+            message: "Successfully signed out of ProteinDesigner"
+        }
+    )
+})
+
 
 
 
