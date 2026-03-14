@@ -114,6 +114,7 @@ app.post("/login", async (req, res) => {
     }
 
     const {data: userProfile, error: error2} = await supabaseService.from("user_profile").select("user_name").eq("user_id", data.user.id).single();
+    console.log(userProfile);
     if(error2){
         return res.status(401).json({message: "Profile fetch failed"});
     }
@@ -125,6 +126,20 @@ app.post("/login", async (req, res) => {
         }
     })
     
+})
+
+app.post("/logout", async (req, res) => {
+    const {error} = await supabaseAnon.auth.signOut();
+    if(error){
+        console.log(error.message || "Error with signing out")
+        return res.status(500).json({message: "Error with signing out"})
+    }
+    
+    return res.status(200).json(
+        {
+            message: "Successfully signed out of ProteinDesigner"
+        }
+    )
 })
 
 
