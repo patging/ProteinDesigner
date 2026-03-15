@@ -17,13 +17,16 @@ import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import ExitToAppOutlinedIcon from "@mui/icons-material/ExitToAppOutlined";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
-import { useLocation, Link } from "react-router";
+import { useLocation, Link, useNavigate } from "react-router";
 import { DashboardTheme } from "../themes/DashboardTheme";
 import { JobStatus } from "../types/JobStatus";
+import {supabase} from "../supabase"
+
 
 interface DashboardLinkProps {
   labelText: string;
   linkTo: string;
+  onClick?: () => void;
   children: React.ReactNode & SvgIconProps; // children that are MUI icons
 }
 
@@ -47,18 +50,19 @@ interface InnerTableProps {
   jobs: Job[];
 }
 
-function DashboardLink({ labelText, linkTo, children }: DashboardLinkProps) {
-  const location = useLocation();
+function DashboardLink({ labelText, linkTo, children, onClick }: DashboardLinkProps) {
   const backgroundColor = location.pathname == linkTo ? grey[200] : "white";
 
   return (
     <Box
+    onClick = {onClick}
       sx={{
         width: "288px",
         height: "60px",
         backgroundColor: { backgroundColor },
         display: "flex",
         alignItems: "center",
+
       }}
     >
       {children}
@@ -67,21 +71,38 @@ function DashboardLink({ labelText, linkTo, children }: DashboardLinkProps) {
           ml: "12px",
         }}
       >
+      {onClick ? 
+      (<Typography variant="h6" style = {{cursor: "pointer"}}>{labelText}</Typography>) :
+      (
         <Link
-          to={linkTo}
-          style={{
-            textDecoration: "None",
-            color: "black",
-          }}
-        >
-          <Typography variant="h6">{labelText}</Typography>
-        </Link>
+        to={linkTo}
+        style={{
+          textDecoration: "None",
+          color: "black",
+        }}
+      >
+        <Typography variant="h6">{labelText}</Typography>
+      </Link>
+      )}
       </Box>
     </Box>
   );
 }
 
 function DashboardPanel() {
+  const location = useLocation();
+  const name = location.state?.name;
+  const navigate = useNavigate();
+  const handleLogout = async () => {
+    const {error} = await supabase.auth.signOut();
+    if(error){
+      console.log("There is an error signing out, check handleLogout in Dashboard.tsx");
+      return;
+    }
+    console.log("Logout was successful.")
+    navigate("/", { replace: true });
+  };
+  console.log("name" + " " + name);
   return (
     <Box
       sx={{
@@ -100,6 +121,9 @@ function DashboardPanel() {
         <Typography variant="h6" sx={{ fontSize: "12pt", color: grey[600] }}>
           AI-powered protein design
         </Typography>
+        <Typography variant="h5" sx={{ fontSize: "14pt", marginTop: "20px"}}>
+          Welcome, {name}
+        </Typography>
       </Box>
 
       <Box sx={{ px: "12px" }}>
@@ -112,8 +136,8 @@ function DashboardPanel() {
         <DashboardLink labelText="Settings" linkTo="/test-api">
           <SettingsOutlinedIcon />
         </DashboardLink>
-        <DashboardLink labelText="Log Out" linkTo="/signup">
-          <ExitToAppOutlinedIcon />
+        <DashboardLink labelText="Log Out" onClick={handleLogout} linkTo="">
+          <ExitToAppOutlinedIcon/>
         </DashboardLink>
       </Box>
     </Box>
