@@ -130,10 +130,10 @@ function DashboardPanel() {
         <DashboardLink labelText="Dashboard" linkTo="/home">
           <SpaceDashboardOutlinedIcon />
         </DashboardLink>
-        <DashboardLink labelText="New Design" linkTo="/test-molstar">
+        <DashboardLink labelText="New Design" linkTo="/create">
           <AddOutlinedIcon />
         </DashboardLink>
-        <DashboardLink labelText="Settings" linkTo="/test-api">
+        <DashboardLink labelText="Settings" linkTo="">
           <SettingsOutlinedIcon />
         </DashboardLink>
         <DashboardLink labelText="Log Out" onClick={handleLogout} linkTo="">

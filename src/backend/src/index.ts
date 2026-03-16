@@ -144,11 +144,9 @@ app.post("/logout", async (req, res) => {
 })
 
 
-// -------- Neurosnap API Proxy Endpoint --------
+// Neurosnap API Proxy Endpoint
 
-// Multer: store uploaded files directly to memory as Buffer object
 const upload = multer({ storage: multer.memoryStorage() });
-
 /**
  * POST /api/submit-rfdiffusion3
  *
@@ -189,8 +187,6 @@ app.post("/api/submit-rfdiffusion3", upload.single("pdbFile"), async (req, res) 
         return res.status(500).json({ message: err.message || "Unexpected error" });
     }
 });
-// -------- Neurosnap API Proxy Endpoint --------
-
 
 
 const PORT = Number(process.env.PORT)
