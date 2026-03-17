@@ -12,6 +12,7 @@ import {
   updateJobStatus,
   WorkflowJobStatus,
 } from "../api/supabaseService.js";
+import { sendNewRfDiffusion3Job } from "../api/neurosnapAPI.js";
 
 const app = express();
 
@@ -159,41 +160,31 @@ app.post(
         new Blob([new Uint8Array(req.file.buffer)]),
         req.file.originalname,
       );
-      formData.append("Contig", contig);
-      formData.append("Number Designs", numberDesigns);
-      formData.append("Timesteps", timesteps);
-      formData.append("Step Scale", stepScale);
+      const originalFileName = req.file.originalname;
+      const file = new Blob([new Uint8Array(req.file.buffer)]);
 
-      const response = await fetch(
-        "https://neurosnap.ai/api/job/submit/RFdiffusion3",
-        {
-          method: "POST",
-          headers: { "X-API-KEY": apiKey },
-          body: formData,
-        },
-      );
-
-      const payload = await response.json();
-      if (!response.ok) {
-        return res
-          .status(response.status)
-          .json({ message: (payload as any).error || response.statusText });
-      }
       // inserting into DB and then pushing to queue
       const jobData = await insertNewJob(
         "none.com", // UPDATE W/ BLOB
-        contig,
+        null,
         WorkflowJobStatus.INQUEUE,
-        payload,
+        null,
       );
       // TO:DO ADD THE INITIAL PUSH TO THE JOB
-      taskQueue.push({
-        workflowJobId: jobData.job_id,
-        neurosnapJobId: payload,
-      });
+      taskQueue
+        .push({
+          workflowJobId: jobData.job_id,
+          file: file,
+          fileOriginalName: originalFileName,
+          contig: contig,
+          numDesigns: numberDesigns,
+          timeSteps: timesteps,
+          stepScale: stepScale,
+        })
+        .catch((e) => console.log(e));
 
       // returning the ID
-      return res.json({ jobId: payload });
+      return res.json({ jobId: jobData.job_id });
     } catch (err: any) {
       console.error("Neurosnap proxy error:", err);
       return res

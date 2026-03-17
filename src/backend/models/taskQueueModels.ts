@@ -1,4 +1,9 @@
 export interface Task {
   workflowJobId: string;
-  neurosnapJobId: string;
+  file: Blob;
+  fileOriginalName: string;
+  contig: string;
+  numDesigns: string;
+  timeSteps: string;
+  stepScale: string;
 }

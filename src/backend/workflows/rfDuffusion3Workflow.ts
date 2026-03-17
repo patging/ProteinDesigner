@@ -5,9 +5,11 @@ import {
   getJobStatus,
   getNeurosnapJobOutput,
   NeurosnapJobStatus,
+  sendNewRfDiffusion3Job,
 } from "../api/neurosnapAPI.js";
 import {
   insertJobResults,
+  updateJobStartTime,
   updateJobEndTime,
   updateJobStatus,
   WorkflowJobStatus,
@@ -16,12 +18,29 @@ import { uploadFile } from "../api/azureBlobAPI.js";
 
 export async function rfDiffusion3Workflow(
   workflowJobId: string,
-  neurosnapJobId: string,
+  file: Blob,
+  fileOriginalName: string,
+  contig: string,
+  numDesigns: string,
+  timeSteps: string,
+  stepScale: string,
 ): Promise<Boolean> {
   console.log("Made it to func", workflowJobId);
   // set status to running
+  const timeNow = new Date();
+  await updateJobStartTime(workflowJobId, timeNow.toISOString());
   await updateJobStatus(workflowJobId, WorkflowJobStatus.RUNNING);
-  console.log("made it here!");
+  console.log("going to send the job!");
+  // sending the job
+  const neurosnapJobId = await sendNewRfDiffusion3Job(
+    file,
+    fileOriginalName,
+    contig,
+    numDesigns,
+    timeSteps,
+    stepScale,
+  );
+  console.log("done sending job");
   // wait for the job to finish
   let completed: boolean = false;
   for (let i = 0; i < 10; i++) {

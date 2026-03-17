@@ -16,6 +16,38 @@ export enum NeurosnapJobStatus {
   CANCELLED = "cancelled",
 }
 
+export async function sendNewRfDiffusion3Job(
+  file: Blob,
+  fileOriginalName: string,
+  contig: string,
+  numDesigns: string,
+  timeSteps: string,
+  stepScale: string,
+): Promise<string> {
+  const formData = new FormData();
+  formData.append("Input Structure", file, fileOriginalName);
+  formData.append("Contig", contig);
+  formData.append("Number Designs", numDesigns);
+  formData.append("Timesteps", timeSteps);
+  formData.append("Step Scale", stepScale);
+  const response = await fetch(
+    "https://neurosnap.ai/api/job/submit/RFdiffusion3",
+    {
+      method: "POST",
+      headers: { "X-API-KEY": process.env.NEUROSNAP_API_KEY! },
+      body: formData,
+    },
+  );
+
+  const payload: string = await response.json(); // the ID
+  if (!response.ok) {
+    throw new Error(
+      `Job sent to RfDiffusion 3 Failed Status: ${response.status} Text: ${response.statusText}`,
+    );
+  }
+  return payload;
+}
+
 /**
  * getStreamFromUrl
  * @param url
