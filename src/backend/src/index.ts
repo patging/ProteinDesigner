@@ -8,6 +8,7 @@ import { taskQueue } from "../api/TaskQueue.js";
 
 import { supabaseAnon, supabaseService } from "../api/supabaseClient.js";
 import {
+  insertJobParameters,
   insertNewJob,
   updateJobStatus,
   WorkflowJobStatus,
@@ -166,14 +167,23 @@ app.post(
       // inserting into DB and then pushing to queue
       const jobData = await insertNewJob(
         "none.com", // UPDATE W/ BLOB
-        null,
+        contig,
         WorkflowJobStatus.INQUEUE,
         null,
       );
+      const job_id = jobData.job_id;
+      await insertJobParameters(
+        job_id,
+        contig,
+        numberDesigns,
+        timesteps,
+        stepScale,
+      );
+
       // TO:DO ADD THE INITIAL PUSH TO THE JOB
       taskQueue
         .push({
-          workflowJobId: jobData.job_id,
+          workflowJobId: job_id,
           file: file,
           fileOriginalName: originalFileName,
           contig: contig,

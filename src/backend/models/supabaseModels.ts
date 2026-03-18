@@ -21,3 +21,17 @@ export interface JobResultsModel {
   job_result_score: number;
   job_result_is_favorite: boolean;
 }
+
+export enum JobParametersModelKey {
+  timeSteps = "timeSteps",
+  numDesigns = "numDesigns",
+  stepScale = "stepScale",
+  contig = "contig",
+}
+
+export interface JobParametersModel {
+  job_parameter_id: string;
+  job_id: string;
+  job_parameter_param_key: JobParametersModelKey;
+  job_parameter_param_value: string;
+}

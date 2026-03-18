@@ -93,7 +93,7 @@ export async function getJobStatus(jobId: string): Promise<NeurosnapJobStatus> {
  *
  * returns the url to a job's output file
  */
-export function getNeurosnapJobOutput(jobId: string): string {
-  const url = `https://neurosnap.ai/api/job/file/${jobId}/out/design_1.pdb`;
+export function getNeurosnapJobOutput(jobId: string, fileNum: Number): string {
+  const url = `https://neurosnap.ai/api/job/file/${jobId}/out/design_${fileNum}.pdb`;
   return url;
 }

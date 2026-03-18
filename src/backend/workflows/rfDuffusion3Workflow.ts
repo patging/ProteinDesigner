@@ -9,6 +9,7 @@ import {
 } from "../api/neurosnapAPI.js";
 import {
   insertJobResults,
+  updateJobApiJobId,
   updateJobStartTime,
   updateJobEndTime,
   updateJobStatus,
@@ -40,6 +41,10 @@ export async function rfDiffusion3Workflow(
     timeSteps,
     stepScale,
   );
+
+  // update entry in the database for this RFDiffusionJob
+  await updateJobApiJobId(workflowJobId, neurosnapJobId);
+
   console.log("done sending job");
   // wait for the job to finish
   let completed: boolean = false;
@@ -74,15 +79,17 @@ export async function rfDiffusion3Workflow(
     await updateJobEndTime(workflowJobId, now.toISOString());
   }
   // update the result status
-  console.log("getting output!", workflowJobId);
-  const resultUrl = getNeurosnapJobOutput(neurosnapJobId);
+  for (let i = 1; i <= parseInt(numDesigns); i++) {
+    console.log("getting output!", workflowJobId);
+    const resultUrl = getNeurosnapJobOutput(neurosnapJobId, i);
 
-  console.log("Uploading to azure!", workflowJobId);
-  const newFileName = `${uuidv4()}.pdb`;
-  const blobUrl = await uploadFile(resultUrl, newFileName);
+    console.log("Uploading to azure!", workflowJobId);
+    const newFileName = `${uuidv4()}.pdb`;
+    const blobUrl = await uploadFile(resultUrl, newFileName);
 
-  console.log("posting to supa!", workflowJobId);
-  await insertJobResults(workflowJobId, blobUrl, 67, false);
+    console.log("posting to supa!", workflowJobId);
+    await insertJobResults(workflowJobId, blobUrl, 100, false);
+  }
   console.log("Done!", workflowJobId);
   return true;
 }

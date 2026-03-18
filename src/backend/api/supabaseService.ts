@@ -1,5 +1,6 @@
 import {
   JobModel,
+  JobParametersModel,
   JobResultsModel,
   JobStatusModel,
 } from "../models/supabaseModels.js";
@@ -112,6 +113,20 @@ export async function updateJobEndTime(
   }
 }
 
+export async function updateJobApiJobId(
+  workflowJobID: string,
+  jobApiJobId: string,
+) {
+  const { error } = await supabaseService
+    .from("jobs")
+    .update({ job_api_job_id: jobApiJobId })
+    .eq("job_id", workflowJobID);
+
+  if (error) {
+    throw error;
+  }
+}
+
 export async function insertJobResults(
   workflow_job_id: string,
   job_result_file_url: string,
@@ -139,5 +154,51 @@ export async function insertJobResults(
     );
   }
 
+  return results[0]!;
+}
+
+export async function insertJobParameters(
+  job_id: string,
+  contig: string,
+  numDesigns: string,
+  timeSteps: string,
+  stepScale: string,
+): Promise<JobParametersModel[]> {
+  const { data, error } = await supabaseService
+    .from("job_parameters")
+    .insert([
+      {
+        job_id: job_id,
+        job_parameter_param_key: "contig",
+        job_parameter_param_value: contig,
+      },
+      {
+        job_id: job_id,
+        job_parameter_param_key: "numDesigns",
+        job_parameter_param_value: numDesigns,
+      },
+      {
+        job_id: job_id,
+        job_parameter_param_key: "timeSteps",
+        job_parameter_param_value: timeSteps,
+      },
+      {
+        job_id: job_id,
+        job_parameter_param_key: "stepScale",
+        job_parameter_param_value: stepScale,
+      },
+    ])
+    .select();
+
+  if (error) {
+    throw error;
+  }
+
+  const results = data as unknown[] as JobParametersModel[][];
+  if (results.length === 0) {
+    throw new Error(
+      `No rows found when submitted in job_parameters. job_id=${job_id}`,
+    );
+  }
   return results[0]!;
 }
