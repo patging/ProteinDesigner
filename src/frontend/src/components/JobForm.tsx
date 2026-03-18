@@ -195,11 +195,12 @@ function JobFormContent({ pdbFile, onFileChange }: JobFormContentProps) {
       setError("Please select a .pdb file.");
       return;
     }
+    // TODO: Add a contig check that looks into the PDB file to ensure the user puts correct info (based on residue numbers, length, etc.)
     if (!contig.trim()) {
       setError("Contig is required.");
       return;
     }
-    // TODO: test for integer and consider other edge cases
+    // TODO: check for integer input + consider other edge cases with the params below (consult the neurosnap API docs)
     if (
       numberDesigns.trim() === "" ||
       isNaN(Number(numberDesigns)) ||
