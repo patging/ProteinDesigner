@@ -3,6 +3,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import { z } from "zod";
 import multer from "multer";
+import { v4 as uuidv4 } from "uuid";
 
 import { taskQueue } from "../api/TaskQueue.js";
 
@@ -14,6 +15,7 @@ import {
   WorkflowJobStatus,
 } from "../api/supabaseService.js";
 import { sendNewRfDiffusion3Job } from "../api/neurosnapAPI.js";
+import { uploadFile } from "../api/azureBlobAPI.js";
 
 const app = express();
 
@@ -164,9 +166,16 @@ app.post(
       const originalFileName = req.file.originalname;
       const file = new Blob([new Uint8Array(req.file.buffer)]);
 
+      // uploading the input file to Azure
+      const inputFileLocalUrl = URL.createObjectURL(file);
+      const inputFileAzureUrl = await uploadFile(
+        inputFileLocalUrl,
+        `${uuidv4()}.pdb`,
+      );
+
       // inserting into DB and then pushing to queue
       const jobData = await insertNewJob(
-        "none.com", // UPDATE W/ BLOB
+        inputFileAzureUrl,
         contig,
         WorkflowJobStatus.INQUEUE,
         null,
@@ -180,7 +189,6 @@ app.post(
         stepScale,
       );
 
-      // TO:DO ADD THE INITIAL PUSH TO THE JOB
       taskQueue
         .push({
           workflowJobId: job_id,
