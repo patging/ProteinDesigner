@@ -26,12 +26,12 @@ export async function rfDiffusion3Workflow(
   timeSteps: string,
   stepScale: string,
 ): Promise<Boolean> {
-  console.log("Made it to func", workflowJobId);
+  console.log(`Made it to workflow. JobID=${workflowJobId}`);
   // set status to running
   const timeNow = new Date();
   await updateJobStartTime(workflowJobId, timeNow.toISOString());
   await updateJobStatus(workflowJobId, WorkflowJobStatus.RUNNING);
-  console.log("going to send the job!");
+  console.log(`Sending job to RfDiffusion3 JobID=${workflowJobId}`);
   // sending the job
   const neurosnapJobId = await sendNewRfDiffusion3Job(
     file,
@@ -45,12 +45,16 @@ export async function rfDiffusion3Workflow(
   // update entry in the database for this RFDiffusionJob
   await updateJobApiJobId(workflowJobId, neurosnapJobId);
 
-  console.log("done sending job");
+  console.log(`Job made it to RFDiffusion3! JobID=${workflowJobId}`);
   // wait for the job to finish
+  const MAX_ATTEMPTS = 10;
+  const TIMEOUT_TIME = 60000;
   let completed: boolean = false;
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < MAX_ATTEMPTS; i++) {
     const status: NeurosnapJobStatus = await getJobStatus(neurosnapJobId);
-    console.log(neurosnapJobId, " status is ", status.valueOf());
+    console.log(
+      `JobID ${workflowJobId} has status of ${status.valueOf()}. Status check (${i + 1}/${MAX_ATTEMPTS})`,
+    );
     if (
       status == NeurosnapJobStatus.FAILED ||
       status == NeurosnapJobStatus.CANCELLED ||
@@ -65,13 +69,13 @@ export async function rfDiffusion3Workflow(
       completed = true;
       break;
     }
-    await setTimeout(60000); // wait one min
+    await setTimeout(TIMEOUT_TIME); // wait one min
   }
   // if the status isn't completed return an error
   if (!completed) {
     await updateJobStatus(workflowJobId, WorkflowJobStatus.FAILED);
     throw new Error(
-      `Job ID ${neurosnapJobId} did not complete within 10 minutes`,
+      `Job ID ${neurosnapJobId} did not complete within ${(MAX_ATTEMPTS * TIMEOUT_TIME) / 60000} minutes`,
     );
   } else {
     await updateJobStatus(workflowJobId, WorkflowJobStatus.COMPLETED);
@@ -80,16 +84,16 @@ export async function rfDiffusion3Workflow(
   }
   // update the result status
   for (let i = 1; i <= parseInt(numDesigns); i++) {
-    console.log("getting output!", workflowJobId);
+    console.log("Fetching output file! JobID=", workflowJobId);
     const resultUrl = getNeurosnapJobOutput(neurosnapJobId, i);
 
-    console.log("Uploading to azure!", workflowJobId);
+    console.log("Uploading File to azure! JobID=", workflowJobId);
     const newFileName = `${uuidv4()}.pdb`;
     const blobUrl = await uploadFile(resultUrl, newFileName);
 
-    console.log("posting to supa!", workflowJobId);
+    console.log("Posting results to Supabase! JobID=", workflowJobId);
     await insertJobResults(workflowJobId, blobUrl, 100, false);
   }
-  console.log("Done!", workflowJobId);
+  console.log("Job complete! JobID=", workflowJobId);
   return true;
 }
