@@ -34,17 +34,24 @@ console.log(
 );
 
 app.post("/signup", async (req, res) => {
-  const Body = z.object({
-    name: z.string().min(1),
-    email: z.email(),
-    password: z.string().min(8),
-  });
+    const Body = z.object({
+        name: z.string().min(1),
+        email: z.email(),
+        password: z.string().min(8),
+      });
 
-  const parsed = Body.safeParse(req.body);
-  if (!parsed.success) {
-    console.log("signup req body:", req.body);
-    return res.status(400).json({
-      message: "Invalid input",
+    const parsed = Body.safeParse(req.body);
+    if(!parsed.success){
+        console.log("signup req body:", req.body)
+        return res.status(400).json({
+            message: "Invalid input",
+          });
+    }
+    const {name, email, password} = parsed.data;
+
+    const {data, error} = await supabaseAnon.auth.signUp({
+        email,
+        password
     });
 
     if(error){
