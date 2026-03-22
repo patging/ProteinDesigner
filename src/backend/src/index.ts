@@ -1,148 +1,141 @@
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import dotenv from "dotenv";
-import {z} from "zod"
-import { createClient } from "@supabase/supabase-js";
+import { z } from "zod";
 import multer from "multer";
+import { v4 as uuidv4 } from "uuid";
 
+import { taskQueue } from "../api/TaskQueue.js";
 
-dotenv.config() // load env variables
+import { supabaseAnon, supabaseService } from "../api/supabaseClient.js";
+import {
+  insertJobParameters,
+  insertNewJob,
+  updateJobStatus,
+  WorkflowJobStatus,
+} from "../api/supabaseService.js";
+import { sendNewRfDiffusion3Job } from "../api/neurosnapAPI.js";
+import { uploadFile } from "../api/azureBlobAPI.js";
+
 const app = express();
 
-
-app.use(express.json())
+app.use(express.json());
 app.use(cookieParser());
 
-app.use(cors({origin: "http://localhost:5173", credentials : true}))
+app.use(cors({ origin: "http://localhost:5173", credentials: true }));
 
-app.get("/health", (req, res) => res.json({ok: true}))
-
-
-
-if(!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY || !process.env.SUPABASE_SERVICE_ROLE_KEY){
-    console.log("check .env file");
-    throw new Error("undefined url or keys");
-}
-
-const supabaseURL = process.env.SUPABASE_URL;
-const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-// used for auth endponts
-const supabaseAnon = createClient(supabaseURL, supabaseAnonKey);
-
-// used for database write
-const supabaseService = createClient(supabaseURL, supabaseServiceKey);
+app.get("/health", (req, res) => res.json({ ok: true }));
 
 console.log("SUPABASE_URL:", process.env.SUPABASE_URL);
 console.log("SUPABASE_ANON_KEY exists:", !!process.env.SUPABASE_ANON_KEY);
-console.log("SUPABASE_SERVICE_ROLE_KEY exists:", !!process.env.SUPABASE_SERVICE_ROLE_KEY);
+console.log(
+  "SUPABASE_SERVICE_ROLE_KEY exists:",
+  !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+);
 
 app.post("/signup", async (req, res) => {
-    const Body = z.object({
-        name: z.string().min(1),
-        email: z.email(),
-        password: z.string().min(8),
-      });
+  const Body = z.object({
+    name: z.string().min(1),
+    email: z.email(),
+    password: z.string().min(8),
+  });
 
-    const parsed = Body.safeParse(req.body);
-    if(!parsed.success){
-        console.log("signup req body:", req.body)
-        return res.status(400).json({
-            message: "Invalid input",
-          });
-    }
-    const {name, email, password} = parsed.data;
-
-    const {data, error} = await supabaseAnon.auth.signUp({
-        email,
-        password
+  const parsed = Body.safeParse(req.body);
+  if (!parsed.success) {
+    console.log("signup req body:", req.body);
+    return res.status(400).json({
+      message: "Invalid input",
     });
+  }
+  const { name, email, password } = parsed.data;
 
-    if(error){
-        return res.status(400).json({message: error.message})
-    }
-    if(!data.user){
-        return res.status(400).json({message: "signup failed"})
-    }
+  const { data, error } = await supabaseAnon.auth.signUp({
+    email,
+    password,
+  });
 
-    const {error: e} = await supabaseService.from("user_profile").insert({
-        user_id: data.user.id,
-        user_name: name,
-        user_email: email
-    })
+  if (error) {
+    return res.status(400).json({ message: error.message });
+  }
+  if (!data.user) {
+    return res.status(400).json({ message: "signup failed" });
+  }
 
-    if(e){
-        console.error(e);
-        return res.status(500).json({
-            message: "Profile creation failed",
-        })
-    }
+  const { error: e } = await supabaseService.from("user_profile").insert({
+    user_id: data.user.id,
+    user_name: name,
+    user_email: email,
+  });
 
-    return res.json({
-        user: {
-            id: data.user.id,
-            email: data.user.email,
-            name: name
-        }
-    })
+  if (e) {
+    console.error(e);
+    return res.status(500).json({
+      message: "Profile creation failed",
+    });
+  }
 
-})
+  return res.json({
+    user: {
+      id: data.user.id,
+      email: data.user.email,
+      name: name,
+    },
+  });
+});
 
 app.post("/login", async (req, res) => {
-    const Body = z.object({
-        email: z.email(),
-        password: z.string().min(1)
-    })
-    const parsed = Body.safeParse(req.body)
-    if(!parsed.success){
-        console.log("error parsing body", req.body)
-        return res.status(400).json({message: "Invalid input"})
-    }
+  const Body = z.object({
+    email: z.email(),
+    password: z.string().min(1),
+  });
+  const parsed = Body.safeParse(req.body);
+  if (!parsed.success) {
+    console.log("error parsing body", req.body);
+    return res.status(400).json({ message: "Invalid input" });
+  }
 
-    const {email, password} = parsed.data
+  const { email, password } = parsed.data;
 
-    const {data, error} = await supabaseAnon.auth.signInWithPassword({
-        email,
-        password
-    })
-    if(error){
-        return res.status(400).json({message: error.message});
-    }
-    if(!data.user){
-        return res.status(400).json({message: "no user"})
-    }
+  const { data, error } = await supabaseAnon.auth.signInWithPassword({
+    email,
+    password,
+  });
+  if (error) {
+    return res.status(400).json({ message: error.message });
+  }
+  if (!data.user) {
+    return res.status(400).json({ message: "no user" });
+  }
 
-    const {data: userProfile, error: error2} = await supabaseService.from("user_profile").select("user_name").eq("user_id", data.user.id).single();
-    console.log(userProfile);
-    if(error2){
-        return res.status(401).json({message: "Profile fetch failed"});
-    }
-    return res.json({
-        user: {
-            id: data.user.id,
-            email: data.user.email,
-            name: userProfile.user_name
-        }
-    })
-    
-})
+  const { data: userProfile, error: error2 } = await supabaseService
+    .from("user_profile")
+    .select("user_name")
+    .eq("user_id", data.user.id)
+    .single();
+  console.log(userProfile);
+  if (error2) {
+    return res.status(401).json({ message: "Profile fetch failed" });
+  }
+  return res.json({
+    user: {
+      id: data.user.id,
+      email: data.user.email,
+      name: userProfile.user_name,
+    },
+  });
+});
 
 app.post("/logout", async (req, res) => {
-    const {error} = await supabaseAnon.auth.signOut();
-    if(error){
-        console.log(error.message || "Error with signing out")
-        return res.status(500).json({message: "Error with signing out"})
-    }
-    
-    return res.status(200).json(
-        {
-            message: "Successfully signed out of ProteinDesigner"
-        }
-    )
-})
+  const { error } = await supabaseAnon.auth.signOut();
+  if (error) {
+    console.log(error.message || "Error with signing out");
+    return res.status(500).json({ message: "Error with signing out" });
+  }
 
+  return res.status(200).json({
+    message: "Successfully signed out of ProteinDesigner",
+  });
+});
 
 // Neurosnap API Proxy Endpoint
 
@@ -153,44 +146,85 @@ const upload = multer({ storage: multer.memoryStorage() });
  * Receives a .pdb file + RFdiffusion3 parameters from the frontend,
  * then proxies the request to Neurosnap's API (keeping the API key server-side).
  */
-app.post("/api/submit-rfdiffusion3", upload.single("pdbFile"), async (req, res) => {
-    if (!req.file) return res.status(400).json({ message: "No PDB file provided" });
+app.post(
+  "/api/submit-rfdiffusion3",
+  upload.single("pdbFile"),
+  async (req, res) => {
+    if (!req.file)
+      return res.status(400).json({ message: "No PDB file provided" });
 
-    const { contig, numberDesigns = "1", timesteps = "10", stepScale = "1.5" } = req.body;
+    const {
+      contig,
+      numberDesigns = "1",
+      timesteps = "10",
+      stepScale = "1.5",
+    } = req.body;
     if (!contig) return res.status(400).json({ message: "Contig is required" });
 
     const apiKey = process.env.NEUROSNAP_API_KEY;
-    if (!apiKey) return res.status(500).json({ message: "NEUROSNAP_API_KEY is not configured on the server" });
+    if (!apiKey)
+      return res
+        .status(500)
+        .json({ message: "NEUROSNAP_API_KEY is not configured on the server" });
 
     try {
-        const formData = new FormData();
-        formData.append("Input Structure", new Blob([new Uint8Array(req.file.buffer)]), req.file.originalname);
-        formData.append("Contig", contig);
-        formData.append("Number Designs", numberDesigns);
-        formData.append("Timesteps", timesteps);
-        formData.append("Step Scale", stepScale);
+      const formData = new FormData();
+      formData.append(
+        "Input Structure",
+        new Blob([new Uint8Array(req.file.buffer)]),
+        req.file.originalname,
+      );
+      const originalFileName = req.file.originalname;
+      const file = new Blob([new Uint8Array(req.file.buffer)]);
 
-        const response = await fetch("https://neurosnap.ai/api/job/submit/RFdiffusion3", {
-            method: "POST",
-            headers: { "X-API-KEY": apiKey },
-            body: formData,
-        });
+      // uploading the input file to Azure
+      const inputFileLocalUrl = URL.createObjectURL(file);
+      const inputFileAzureUrl = await uploadFile(
+        inputFileLocalUrl,
+        `${uuidv4()}.pdb`,
+      );
 
-        const payload = await response.json();
-        if (!response.ok) {
-            return res.status(response.status).json({ message: (payload as any).error || response.statusText });
-        }
+      // inserting into DB and then pushing to queue
+      const jobData = await insertNewJob(
+        inputFileAzureUrl,
+        contig,
+        WorkflowJobStatus.INQUEUE,
+        null,
+      );
+      const job_id = jobData.job_id;
+      await insertJobParameters(
+        job_id,
+        contig,
+        numberDesigns,
+        timesteps,
+        stepScale,
+      );
 
-        return res.json({ jobId: payload });
+      taskQueue
+        .push({
+          workflowJobId: job_id,
+          file: file,
+          fileOriginalName: originalFileName,
+          contig: contig,
+          numDesigns: numberDesigns,
+          timeSteps: timesteps,
+          stepScale: stepScale,
+        })
+        .catch((e) => console.log(e));
+
+      // returning the ID
+      return res.json({ jobId: jobData.job_id });
     } catch (err: any) {
-        console.error("Neurosnap proxy error:", err);
-        return res.status(500).json({ message: err.message || "Unexpected error" });
+      console.error("Neurosnap proxy error:", err);
+      return res
+        .status(500)
+        .json({ message: err.message || "Unexpected error" });
     }
-});
+  },
+);
 
-
-const PORT = Number(process.env.PORT)
+const PORT = Number(process.env.PORT);
 
 app.listen(PORT, () => {
-    console.log("app listening on", `${PORT}`)
-})
+  console.log("app listening on", `${PORT}`);
+});
