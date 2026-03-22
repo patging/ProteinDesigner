@@ -20,7 +20,8 @@ import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import { useLocation, Link, useNavigate } from "react-router";
 import { DashboardTheme } from "../themes/DashboardTheme";
 import { JobStatus } from "../types/JobStatus";
-import {supabase} from "../supabase"
+import { supabase } from "../supabase"
+import { useState, useEffect } from 'react'
 
 
 interface DashboardLinkProps {
@@ -91,7 +92,29 @@ function DashboardLink({ labelText, linkTo, children, onClick }: DashboardLinkPr
 
 function DashboardPanel() {
   const location = useLocation();
-  const name = location.state?.name;
+  const [name, setName] = useState("")
+  useEffect(() => {
+    const currentUser = async () => {
+      const { data } = await supabase.auth.getUser();
+      if(!data.user){
+        console.log("error with supabase returning a user, maybe session problem")
+        return;
+      }
+      const res = await fetch(`http://localhost:4000/me/${data.user.id}`);
+      if(!res){
+        console.log("error fetching from our backend endpoint me")
+        return;
+      }
+      const parsed = await res.json();
+      if(!parsed){
+        console.log("error parsing me response data");
+      }
+      setName(parsed.user.name);
+
+    }
+    currentUser();
+
+  }, []);
   const navigate = useNavigate();
   const handleLogout = async () => {
     const {error} = await supabase.auth.signOut();

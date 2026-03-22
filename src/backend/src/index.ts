@@ -85,7 +85,8 @@ app.post("/signup", async (req, res) => {
             id: data.user.id,
             email: data.user.email,
             name: name
-        }
+        },
+        session: data.session,
     })
 
 })
@@ -124,24 +125,55 @@ app.post("/login", async (req, res) => {
             id: data.user.id,
             email: data.user.email,
             name: userProfile.user_name
-        }
+        },
+        session: data.session
     })
     
 })
 
-app.post("/logout", async (req, res) => {
-    const {error} = await supabaseAnon.auth.signOut();
-    if(error){
-        console.log(error.message || "Error with signing out")
-        return res.status(500).json({message: "Error with signing out"})
-    }
+
+// app.post("/logout", async (req, res) => {
+//     const {error} = await supabaseAnon.auth.signOut();
+//     if(error){
+//         console.log(error.message || "Error with signing out")
+//         return res.status(500).json({message: "Error with signing out"})
+//     }
     
-    return res.status(200).json(
-        {
-            message: "Successfully signed out of ProteinDesigner"
+//     return res.status(200).json(
+//         {
+//             message: "Successfully signed out of ProteinDesigner"
+//         }
+//     )
+// })
+
+app.get("/me/:id", async (req, res) => {
+    const {id} = req.params;
+    if(!id){
+        console.log("no id in the request, check communication");
+        return res.status(400).json({message: "No id given"})
+    }
+
+    const {data: profile, error: profileError} = await supabaseService
+        .from("user_profile")
+        .select("user_name, user_email")
+        .eq("user_id", id)
+        .single()
+    
+    if(profileError || !profile){
+        console.log(profileError?.message || "There was an error when fetching profile from user table in supabase");
+        return res.status(400).json({message: "problem fetching profile from supabase"})
+    }
+    return res.json({
+        user: {
+            name: profile.user_name,
+            email: profile.user_email,
+            id: id
         }
-    )
+    })
+
+
 })
+
 
 
 // Neurosnap API Proxy Endpoint

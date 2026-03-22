@@ -8,6 +8,12 @@ import { FormHeader } from "./FormComponents/FormHeader";
 import { FormFooter } from "./FormComponents/FormFooter";
 import { SignUpLogInTheme } from "../themes/SignUpLogInTheme";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "../supabase"
+type User = {
+  id: string;
+  email: string;
+  name: string;
+};
 export function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -36,6 +42,7 @@ export function LoginForm() {
         console.log("login name" + " " + parsed.user.name)
         console.log("login response" + " " + parsed);
         setSuccess(true);
+        await supabase.auth.setSession(parsed.session);
         navigate("/home", {
           state: { name: parsed.user.name },
         });
