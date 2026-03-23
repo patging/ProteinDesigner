@@ -156,7 +156,7 @@ function DashboardPanel() {
         <DashboardLink labelText="New Design" linkTo="/create">
           <AddOutlinedIcon />
         </DashboardLink>
-        <DashboardLink labelText="Settings" linkTo="">
+        <DashboardLink labelText="Settings" linkTo="/settings">
           <SettingsOutlinedIcon />
         </DashboardLink>
         <DashboardLink labelText="Log Out" onClick={handleLogout} linkTo="">
