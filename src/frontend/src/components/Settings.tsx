@@ -4,6 +4,7 @@ import {
     Box,
     Typography
   } from "@mui/material";
+import {DashboardPanel} from './Dashboard'
 
 
 export function Settings() {
@@ -32,8 +33,10 @@ export function Settings() {
 
     }, [])
         return(
-        <div style = {{display: "flex", flexDirection: "column", gap: "35px", backgroundColor: "lightgray", fontFamily: "monospace" }}>
-            <h1>Welcome To Protein Designer Profile Page</h1>
+            <div style = {{display: "flex", height: "100vh", margin: "0"}}>
+            <DashboardPanel/>
+        <div style = {{display: "flex", flexDirection: "column", gap: "35px", backgroundColor: "lightgray", fontFamily: "monospace", padding: "20px", flex: "1" }}>
+            <h1>Welcome To Protein Designer Settings Page</h1>
         <Typography variant="h5" sx={{ fontSize: "14pt" }}>
           Name: {name}
         </Typography>
@@ -43,6 +46,7 @@ export function Settings() {
         <Typography variant="h5" sx={{ fontSize: "14pt" }}>
           ID: {id}
         </Typography>
+        </div>
         </div>
         )
 

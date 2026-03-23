@@ -90,7 +90,7 @@ function DashboardLink({ labelText, linkTo, children, onClick }: DashboardLinkPr
   );
 }
 
-function DashboardPanel() {
+export function DashboardPanel() {
   const location = useLocation();
   const [name, setName] = useState("")
   useEffect(() => {
