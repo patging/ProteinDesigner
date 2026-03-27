@@ -13,6 +13,7 @@ import {
   IconButton,
   Button,
   Chip,
+  CircularProgress,
 } from "@mui/material";
 import { blue, grey, green, red, orange } from "@mui/material/colors";
 import { type SvgIconProps, MenuItem, FormControl } from "@mui/material";
@@ -24,7 +25,7 @@ import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import ExitToAppOutlinedIcon from "@mui/icons-material/ExitToAppOutlined";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import CloseIcon from "@mui/icons-material/Close";
-import { useLocation, Link, useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { DashboardTheme } from "../themes/DashboardTheme";
 import { JobStatus } from "../types/JobStatus";
 import { supabase } from "../supabase";
@@ -56,25 +57,9 @@ type Job = {
   proteinDesignUrl: string;
 };
 
-type StoredUser = {
-  id: string;
-  name?: string;
-  email?: string;
-};
-
-// Helper function to get user session from localStorage
-function getStoredUser(): StoredUser | null {
-  const raw = localStorage.getItem("pd_user");
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw) as StoredUser;
-  } catch {
-    return null;
-  }
-}
-
 interface InnerTableProps {
   jobs: Job[];
+  loading: boolean;
 }
 
 // Maps a job status string to a MUI Chip color + label
@@ -137,7 +122,6 @@ function DashboardLink({ labelText, linkTo, children, onClick }: DashboardLinkPr
 }
 
 export function DashboardPanel() {
-  const location = useLocation();
   const [name, setName] = useState("")
   useEffect(() => {
     const currentUser = async () => {
@@ -221,7 +205,7 @@ function DashboardSelect({ labelText, options }: DashboardSelectProps) {
         value={""}
         displayEmpty
         sx={{ width: "128px", maxHeight: "32px", bgcolor: grey[200] }}
-        inputProps={{ "aria-label": "Without label" }}
+        inputProps={{ "aria-label": labelText }}
       >
         <MenuItem value="">
           <em>None</em>
@@ -255,23 +239,67 @@ const bodyCellSx = {
   borderBottom: `1px solid ${grey[100]}`,
 };
 
-function InnerTable({ jobs }: InnerTableProps) {
+function InnerTable({ jobs, loading }: InnerTableProps) {
   const navigate = useNavigate();
   const [openViewer, setOpenViewer] = useState(false);
   const [viewerProtein, setViewerProtein] = useState<Protein | undefined>();
   const [viewerTitle, setViewerTitle] = useState("");
+  const [viewerLoading, setViewerLoading] = useState(false);
+  const [viewerError, setViewerError] = useState<string | null>(null);
 
-  const handleOpenViewer = (url: string, label: string) => {
-    // TODO @e-infra/react-molstar-wrapper accepts { url } to load from a remote URL
-    setViewerProtein({ url });
+  const getFileNameFromUrl = (url: string, fallbackLabel: string) => {
+    try {
+      const parsed = new URL(url);
+      const fileName = parsed.pathname.split("/").pop();
+      if (fileName && fileName.trim().length > 0) {
+        return fileName;
+      }
+    } catch {
+      // Ignore URL parsing error and use fallback name.
+    }
+
+    return `${fallbackLabel.toLowerCase().replace(/\s+/g, "_")}.pdb`;
+  };
+
+  const handleOpenViewer = async (url: string, label: string) => {
     setViewerTitle(label);
     setOpenViewer(true);
+    setViewerLoading(true);
+    setViewerError(null);
+    setViewerProtein(undefined);
+
+    try {
+      const proxyUrl = `http://localhost:4000/api/blob-proxy?url=${encodeURIComponent(url)}`;
+      const response = await fetch(proxyUrl, {
+        method: "GET",
+        credentials: "include",
+      });
+      if (!response.ok) {
+        throw new Error(`Failed to fetch file (${response.status})`);
+      }
+
+      const blob = await response.blob();
+      const fileName = getFileNameFromUrl(url, label);
+      const file = new File([blob], fileName, {
+        type: blob.type || "chemical/x-pdb",
+      });
+
+      setViewerProtein({ file });
+    } catch (error: any) {
+      setViewerError(
+        error?.message ||
+          "Unable to load this structure. Check blob URL access and CORS settings.",
+      );
+    } finally {
+      setViewerLoading(false);
+    }
   };
 
   const handleCloseViewer = () => {
     setOpenViewer(false);
-    // Clear after dialog close animation finishes
-    setTimeout(() => setViewerProtein(undefined), 300);
+    setViewerLoading(false);
+    setViewerError(null);
+    setViewerProtein(undefined);
   };
 
   const handleViewResults = (jobId: string) => {
@@ -404,7 +432,16 @@ function InnerTable({ jobs }: InnerTableProps) {
           </TableBody>
         </Table>
 
-        {jobs.length === 0 && (
+        {loading && (
+          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "300px", gap: "10px" }}>
+            <CircularProgress size={24} />
+            <Typography sx={{ fontSize: "14px", color: grey[500] }}>
+              Loading jobs...
+            </Typography>
+          </Box>
+        )}
+
+        {!loading && jobs.length === 0 && (
           <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "300px" }}>
             <Box sx={{ textAlign: "center" }}>
               <Typography sx={{ fontSize: "14px", color: grey[400], mb: "8px" }}>
@@ -450,12 +487,43 @@ function InnerTable({ jobs }: InnerTableProps) {
           </IconButton>
         </DialogTitle>
         <DialogContent sx={{ p: 0, height: "640px" }}>
-          {/*
-            Viewer is rendered outside any <form>, so its toolbar buttons
-            cannot accidentally trigger a form submission (same rule as JobForm).
-            viewerProtein carries { url } which react-molstar-wrapper fetches directly.
-          */}
-          {viewerProtein && (
+          {viewerLoading && (
+            <Box
+              sx={{
+                width: "100%",
+                height: "100%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexDirection: "column",
+                gap: "10px",
+              }}
+            >
+              <CircularProgress size={28} />
+              <Typography sx={{ color: grey[600], fontSize: "13px" }}>
+                Loading structure...
+              </Typography>
+            </Box>
+          )}
+
+          {!viewerLoading && viewerError && (
+            <Box
+              sx={{
+                width: "100%",
+                height: "100%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                p: "24px",
+              }}
+            >
+              <Typography sx={{ color: red[700], fontSize: "13px", textAlign: "center" }}>
+                {viewerError}
+              </Typography>
+            </Box>
+          )}
+
+          {!viewerLoading && !viewerError && viewerProtein && (
             <Viewer proteins={[viewerProtein]} height={640} />
           )}
         </DialogContent>
@@ -473,15 +541,15 @@ function DashboardTable() {
       try {
         setLoading(true);
 
-        const user = getStoredUser();
-        if (!user?.id) {
-          console.error("No user found in local storage");
+        const { data, error } = await supabase.auth.getUser();
+        if (error || !data.user) {
+          console.error("No authenticated user found", error);
           setLoading(false);
           return;
         }
 
         const response = await fetch(
-          `http://localhost:4000/api/jobs?userId=${encodeURIComponent(user.id)}`,
+          `http://localhost:4000/api/jobs?userId=${encodeURIComponent(data.user.id)}`,
           { method: "GET", credentials: "include" }
         );
 
@@ -529,13 +597,7 @@ function DashboardTable() {
         <DashboardSelect labelText="Tester" options={["Test1", "Test2"]} />
       </Box>
 
-      {loading && (
-        <Typography variant="h6" sx={{ ml: "8px", mb: "10px", fontWeight: "normal", color: grey[500] }}>
-          Loading jobs...
-        </Typography>
-      )}
-
-      <InnerTable jobs={jobs} />
+      <InnerTable jobs={jobs} loading={loading} />
     </Box>
   );
 }

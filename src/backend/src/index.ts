@@ -169,7 +169,6 @@ app.get("/me/:id", async (req, res) => {
 })
 
 
-
 app.get("/api/jobs", async (req, res) => {
   // Validate userId query param
   const parsedUserId = z.uuid().safeParse(req.query.userId);
@@ -243,7 +242,54 @@ app.get("/api/jobs", async (req, res) => {
   }
 });
 
-// Neurosnap API Proxy Endpoint
+/**
+ * GET /api/blob-proxy
+ *
+ * Proxies a request to an Azure Blob Storage URL, returning the blob file contents.
+ */
+app.get("/api/blob-proxy", async (req, res) => {
+  const rawUrl = req.query.url;
+  if (typeof rawUrl !== "string" || rawUrl.length === 0) {
+    return res.status(400).json({ message: "url query param is required" });
+  }
+
+  let parsedUrl: URL;
+  try {
+    parsedUrl = new URL(rawUrl);
+  } catch {
+    return res.status(400).json({ message: "Invalid url" });
+  }
+
+  // Avoid SSRF by only allowing Azure Blob Storage URLs
+  if (parsedUrl.protocol !== "https:" || !parsedUrl.hostname.endsWith(".blob.core.windows.net")) {
+    return res.status(400).json({ message: "Only Azure blob URLs are allowed" });
+  }
+
+  try {
+    const upstream = await fetch(parsedUrl.toString(), { method: "GET" });
+    if (!upstream.ok) {
+      return res.status(upstream.status).json({
+        message: `Unable to fetch blob file (${upstream.status})`,
+      });
+    }
+
+    const arrayBuffer = await upstream.arrayBuffer();
+    const contentType =
+      upstream.headers.get("content-type") || "application/octet-stream";
+    const fileName = parsedUrl.pathname.split("/").pop() || "structure.pdb";
+
+    res.setHeader("Content-Type", contentType);
+    res.setHeader("Content-Length", String(arrayBuffer.byteLength));
+    res.setHeader("Cache-Control", "private, max-age=120");
+    res.setHeader("Content-Disposition", `inline; filename=\"${fileName}\"`);
+
+    return res.send(Buffer.from(arrayBuffer));
+  } catch (err: any) {
+    console.error("Blob proxy error:", err);
+    return res.status(500).json({ message: err.message || "Unexpected error" });
+  }
+});
+
 
 const upload = multer({ storage: multer.memoryStorage() });
 /**
