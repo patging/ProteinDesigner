@@ -7,47 +7,15 @@ import {
   Alert,
   CircularProgress,
 } from "@mui/material";
-import { grey } from "@mui/material/colors";
-import { type SvgIconProps } from "@mui/material";
 import { ThemeProvider } from "@mui/material/styles";
-import SpaceDashboardOutlinedIcon from "@mui/icons-material/SpaceDashboardOutlined";
-import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
-import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
-import ExitToAppOutlinedIcon from "@mui/icons-material/ExitToAppOutlined";
 import UploadFileOutlinedIcon from "@mui/icons-material/UploadFileOutlined";
 import SendOutlinedIcon from "@mui/icons-material/SendOutlined";
 import { Viewer } from "@e-infra/react-molstar-wrapper";
 import type { Protein } from "@e-infra/react-molstar-wrapper";
 import "@e-infra/react-molstar-wrapper/style.css";
-import { useLocation, Link, useNavigate } from "react-router";
 import { DashboardTheme } from "../themes/DashboardTheme";
 import { supabase } from "../supabase";
-
-// Helper function to get user session from localStorage
-type StoredUser = {
-  id: string;
-  name?: string;
-  email?: string;
-};
-
-function getStoredUser(): StoredUser | null {
-  const raw = localStorage.getItem("pd_user");
-  if (!raw) return null;
-
-  try {
-    return JSON.parse(raw) as StoredUser;
-  } catch {
-    return null;
-  }
-}
-
-// COPIED FROM Dashboard.tsx 26:31
-interface DashboardLinkProps {
-  labelText: string;
-  linkTo: string;
-  onClick?: () => void;
-  children: React.ReactNode & SvgIconProps; // children that are MUI icons
-}
+import { DashboardPanel } from "./Dashboard";
 
 interface JobFormFieldProps {
   label: string;
@@ -60,110 +28,6 @@ interface JobFormFieldProps {
 interface JobFormContentProps {
   pdbFile: File | null;
   onFileChange: (file: File | null) => void;
-}
-
-// COPIED FROM Dashboard.tsx 53:90
-function DashboardLink({
-  labelText,
-  linkTo,
-  children,
-  onClick,
-}: DashboardLinkProps) {
-  const backgroundColor = location.pathname == linkTo ? grey[200] : "white";
-
-  return (
-    <Box
-      onClick={onClick}
-      sx={{
-        width: "288px",
-        height: "60px",
-        backgroundColor: { backgroundColor },
-        display: "flex",
-        alignItems: "center",
-      }}
-    >
-      {children}
-      <Box
-        sx={{
-          ml: "12px",
-        }}
-      >
-        {onClick ? (
-          <Typography variant="h6" style={{ cursor: "pointer" }}>
-            {labelText}
-          </Typography>
-        ) : (
-          <Link
-            to={linkTo}
-            style={{
-              textDecoration: "None",
-              color: "black",
-            }}
-          >
-            <Typography variant="h6">{labelText}</Typography>
-          </Link>
-        )}
-      </Box>
-    </Box>
-  );
-}
-
-// COPIED FROM Dashboard.tsx 92:145
-function DashboardPanel() {
-  const location = useLocation();
-  const name = location.state?.name;
-  const navigate = useNavigate();
-  const handleLogout = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      console.log(
-        "There is an error signing out, check handleLogout in Dashboard.tsx",
-      );
-      return;
-    }
-    console.log("Logout was successful.");
-    navigate("/", { replace: true });
-  };
-  console.log("name" + " " + name);
-  return (
-    <Box
-      sx={{
-        width: "300px",
-        minHeight: "500px",
-        display: "flex",
-        flexDirection: "column",
-        gap: "16px",
-        px: "16px",
-      }}
-    >
-      <Box>
-        <Typography variant="h5" sx={{ fontSize: "14pt" }}>
-          Protein Designer
-        </Typography>
-        <Typography variant="h6" sx={{ fontSize: "12pt", color: grey[600] }}>
-          AI-powered protein design
-        </Typography>
-        <Typography variant="h5" sx={{ fontSize: "14pt", marginTop: "20px" }}>
-          Welcome, {name}
-        </Typography>
-      </Box>
-
-      <Box sx={{ px: "12px" }}>
-        <DashboardLink labelText="Dashboard" linkTo="/home">
-          <SpaceDashboardOutlinedIcon />
-        </DashboardLink>
-        <DashboardLink labelText="New Design" linkTo="/create">
-          <AddOutlinedIcon />
-        </DashboardLink>
-        <DashboardLink labelText="Settings" linkTo="">
-          <SettingsOutlinedIcon />
-        </DashboardLink>
-        <DashboardLink labelText="Log Out" onClick={handleLogout} linkTo="">
-          <ExitToAppOutlinedIcon />
-        </DashboardLink>
-      </Box>
-    </Box>
-  );
 }
 
 function JobFormField({
@@ -246,14 +110,14 @@ function JobFormContent({ pdbFile, onFileChange }: JobFormContentProps) {
 
     setLoading(true);
     try {
-      const user = getStoredUser(); // get user session from localStorage
-      if (!user?.id) {
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      if (userError || !userData.user) {
         throw new Error("User session not found. Please log in again.");
       }
 
       const formData = new FormData();
       formData.append("pdbFile", pdbFile);
-      formData.append("userId", user.id);
+      formData.append("userId", userData.user.id);
       formData.append("contig", contig);
       formData.append("numberDesigns", numberDesigns);
       formData.append("timesteps", timesteps);
@@ -264,10 +128,10 @@ function JobFormContent({ pdbFile, onFileChange }: JobFormContentProps) {
         body: formData,
       });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || res.statusText);
+      const responseData = await res.json();
+      if (!res.ok) throw new Error(responseData.message || res.statusText);
 
-      setJobId(String(data.jobId));
+      setJobId(String(responseData.jobId));
     } catch (err: any) {
       setError(err.message || "Unexpected error");
     } finally {
