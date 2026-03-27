@@ -3,6 +3,7 @@ import { LoginForm } from "./LoginForm";
 import { SignUpForm } from "./SignUpForm";
 import { Dashboard } from "./Dashboard";
 import { JobForm } from "./JobForm";
+import { Settings } from "./Settings"
 import { JobResults } from "./JobResults";
 
 /**
@@ -20,6 +21,7 @@ export function AppRouter() {
         <Route path="/signup" element={<SignUpForm />} />
         <Route path="/home" element={<Dashboard />} />
         <Route path="/create" element={<JobForm />} />
+        <Route path="/settings" element={<Settings />} />
         <Route path="/results/:jobId" element={<JobResults />} />
       </Routes>
     </BrowserRouter>
