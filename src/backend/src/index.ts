@@ -34,108 +34,141 @@ console.log(
 );
 
 app.post("/signup", async (req, res) => {
-  const Body = z.object({
-    name: z.string().min(1),
-    email: z.email(),
-    password: z.string().min(8),
-  });
+    const Body = z.object({
+        name: z.string().min(1),
+        email: z.email(),
+        password: z.string().min(8),
+      });
 
-  const parsed = Body.safeParse(req.body);
-  if (!parsed.success) {
-    console.log("signup req body:", req.body);
-    return res.status(400).json({
-      message: "Invalid input",
+    const parsed = Body.safeParse(req.body);
+    if(!parsed.success){
+        console.log("signup req body:", req.body)
+        return res.status(400).json({
+            message: "Invalid input",
+          });
+    }
+    const {name, email, password} = parsed.data;
+
+    const {data, error} = await supabaseAnon.auth.signUp({
+        email,
+        password
     });
-  }
-  const { name, email, password } = parsed.data;
 
-  const { data, error } = await supabaseAnon.auth.signUp({
-    email,
-    password,
-  });
+    if(error){
+        return res.status(400).json({message: error.message})
+    }
+    if(!data.user){
+        return res.status(400).json({message: "signup failed"})
+    }
 
-  if (error) {
-    return res.status(400).json({ message: error.message });
-  }
-  if (!data.user) {
-    return res.status(400).json({ message: "signup failed" });
-  }
+    const {error: e} = await supabaseService.from("user_profile").insert({
+        user_id: data.user.id,
+        user_name: name,
+        user_email: email
+    })
 
-  const { error: e } = await supabaseService.from("user_profile").insert({
-    user_id: data.user.id,
-    user_name: name,
-    user_email: email,
-  });
+    if(e){
+        console.error(e);
+        return res.status(500).json({
+            message: "Profile creation failed",
+        })
+    }
 
-  if (e) {
-    console.error(e);
-    return res.status(500).json({
-      message: "Profile creation failed",
-    });
-  }
+    return res.json({
+        user: {
+            id: data.user.id,
+            email: data.user.email,
+            name: name
+        },
+        session: data.session,
+    })
 
-  return res.json({
-    user: {
-      id: data.user.id,
-      email: data.user.email,
-      name: name,
-    },
-  });
-});
+})
 
 app.post("/login", async (req, res) => {
-  const Body = z.object({
-    email: z.email(),
-    password: z.string().min(1),
-  });
-  const parsed = Body.safeParse(req.body);
-  if (!parsed.success) {
-    console.log("error parsing body", req.body);
-    return res.status(400).json({ message: "Invalid input" });
-  }
+    const Body = z.object({
+        email: z.email(),
+        password: z.string().min(1)
+    })
+    const parsed = Body.safeParse(req.body)
+    if(!parsed.success){
+        console.log("error parsing body", req.body)
+        return res.status(400).json({message: "Invalid input"})
+    }
 
-  const { email, password } = parsed.data;
+    const {email, password} = parsed.data
 
-  const { data, error } = await supabaseAnon.auth.signInWithPassword({
-    email,
-    password,
-  });
-  if (error) {
-    return res.status(400).json({ message: error.message });
-  }
-  if (!data.user) {
-    return res.status(400).json({ message: "no user" });
-  }
+    const {data, error} = await supabaseAnon.auth.signInWithPassword({
+        email,
+        password
+    })
+    if(error){
+        return res.status(400).json({message: error.message});
+    }
+    if(!data.user){
+        return res.status(400).json({message: "no user"})
+    }
 
-  const { data: userProfile, error: error2 } = await supabaseService
-    .from("user_profile")
-    .select("user_name")
-    .eq("user_id", data.user.id)
-    .single();
-  console.log(userProfile);
-  if (error2) {
-    return res.status(401).json({ message: "Profile fetch failed" });
-  }
-  return res.json({
-    user: {
-      id: data.user.id,
-      email: data.user.email,
-      name: userProfile.user_name,
-    },
-  });
-});
+    const {data: userProfile, error: error2} = await supabaseService.from("user_profile").select("user_name").eq("user_id", data.user.id).single();
+    console.log(userProfile);
+    if(error2){
+        return res.status(401).json({message: "Profile fetch failed"});
+    }
+    return res.json({
+        user: {
+            id: data.user.id,
+            email: data.user.email,
+            name: userProfile.user_name
+        },
+        session: data.session
+    })
+    
+})
 
-app.post("/logout", async (req, res) => {
-  const { error } = await supabaseAnon.auth.signOut();
-  if (error) {
-    console.log(error.message || "Error with signing out");
-    return res.status(500).json({ message: "Error with signing out" });
-  }
 
-  return res.status(200).json({
-    message: "Successfully signed out of ProteinDesigner",
-  });
-});
+// app.post("/logout", async (req, res) => {
+//     const {error} = await supabaseAnon.auth.signOut();
+//     if(error){
+//         console.log(error.message || "Error with signing out")
+//         return res.status(500).json({message: "Error with signing out"})
+//     }
+    
+//     return res.status(200).json(
+//         {
+//             message: "Successfully signed out of ProteinDesigner"
+//         }
+//     )
+// })
+
+app.get("/me/:id", async (req, res) => {
+    const {id} = req.params;
+    if(!id){
+        console.log("no id in the request, check communication");
+        return res.status(400).json({message: "No id given"})
+    }
+
+    const {data: profile, error: profileError} = await supabaseService
+        .from("user_profile")
+        .select("user_name, user_email")
+        .eq("user_id", id)
+        .single()
+    
+    if(profileError || !profile){
+        console.log(profileError?.message || "There was an error when fetching profile from user table in supabase");
+        return res.status(400).json({message: "problem fetching profile from supabase"})
+    }
+    return res.json({
+        user: {
+            name: profile.user_name,
+            email: profile.user_email,
+            id: id
+        }
+    })
+
+
+})
+
+
 
 // Neurosnap API Proxy Endpoint
 
