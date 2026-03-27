@@ -44,8 +44,9 @@ export function SignUpForm() {
       }
       console.log("signup was a success");
       console.log("name" + " " + parsed.user.name)
+      localStorage.setItem("pd_user", JSON.stringify(parsed.user)); // Store user data in localStorage for session persistence
       navigate("/home", {
-        state: { name: parsed.user.name },
+        state: { name: parsed.user.name, userId: parsed.user.id },
       });
     } catch (e) {
       console.log(e);

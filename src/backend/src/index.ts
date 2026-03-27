@@ -137,6 +137,79 @@ app.post("/logout", async (req, res) => {
   });
 });
 
+app.get("/api/jobs", async (req, res) => {
+  // Validate userId query param
+  const parsedUserId = z.uuid().safeParse(req.query.userId);
+  if (!parsedUserId.success) {
+    return res.status(400).json({ message: "userId query param is required" });
+  }
+
+  try {
+    const userId = parsedUserId.data;
+
+    // Query jobs table for all jobs belonging to the user, along with status and creation time. Order by creation time descending
+    const { data: jobsData, error: jobsError } = await supabaseService
+      .from("jobs")
+      .select("job_id, job_status_id, job_start_time, job_input_file_url")
+      .eq("user_id", userId)
+      .order("job_start_time", { ascending: false, nullsFirst: false });
+
+    if (jobsError) {
+      throw jobsError;
+    }
+
+    // Query job_status table to get mapping of status_id to status_message for all possible statuses
+    const { data: statusData, error: statusError } = await supabaseService
+      .from("job_status")
+      .select("job_status_id, job_status_message");
+
+    if (statusError) {
+      throw statusError;
+    }
+
+    const statusById = new Map<number, string>();
+    for (const status of statusData ?? []) {
+      statusById.set(status.job_status_id, status.job_status_message);
+    }
+
+    const jobIds = (jobsData ?? []).map((job) => job.job_id);
+    let resultByJobId = new Map<string, string>();
+
+    // If there are any jobs, query job_results table to get mapping of job_id to job_result_file_url for all jobs that have results
+    if (jobIds.length > 0) {
+      const { data: resultsData, error: resultsError } = await supabaseService
+        .from("job_results")
+        .select("job_id, job_result_file_url")
+        .in("job_id", jobIds);
+
+      if (resultsError) {
+        throw resultsError;
+      }
+
+      resultByJobId = new Map<string, string>(
+        (resultsData ?? []).map((result) => [
+          result.job_id,
+          result.job_result_file_url,
+        ]),
+      );
+    }
+
+    // Return results after querying all necessary tables, mapping job status and results to each job
+    const response = (jobsData ?? []).map((job) => ({
+      jobId: job.job_id,
+      status: statusById.get(job.job_status_id) ?? "missing",
+      createdAt: job.job_start_time,
+      inputFileUrl: job.job_input_file_url,
+      outputFileUrl: resultByJobId.get(job.job_id) ?? null,
+    }));
+
+    return res.json({ jobs: response });
+  } catch (err: any) {
+    console.error("Error fetching jobs:", err);
+    return res.status(500).json({ message: err.message || "Unexpected error" });
+  }
+});
+
 // Neurosnap API Proxy Endpoint
 
 const upload = multer({ storage: multer.memoryStorage() });
@@ -154,11 +227,16 @@ app.post(
       return res.status(400).json({ message: "No PDB file provided" });
 
     const {
+      userId,
       contig,
       numberDesigns = "1",
       timesteps = "10",
       stepScale = "1.5",
     } = req.body;
+    const parsedUserId = z.uuid().safeParse(userId);
+    if (!parsedUserId.success) {
+      return res.status(400).json({ message: "userId is required" });
+    }
     if (!contig) return res.status(400).json({ message: "Contig is required" });
 
     const apiKey = process.env.NEUROSNAP_API_KEY;
@@ -186,6 +264,7 @@ app.post(
 
       // inserting into DB and then pushing to queue
       const jobData = await insertNewJob(
+        parsedUserId.data,
         inputFileAzureUrl,
         contig,
         WorkflowJobStatus.INQUEUE,

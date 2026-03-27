@@ -23,6 +23,24 @@ import { useLocation, Link, useNavigate } from "react-router";
 import { DashboardTheme } from "../themes/DashboardTheme";
 import { supabase } from "../supabase";
 
+// Helper function to get user session from localStorage
+type StoredUser = {
+  id: string;
+  name?: string;
+  email?: string;
+};
+
+function getStoredUser(): StoredUser | null {
+  const raw = localStorage.getItem("pd_user");
+  if (!raw) return null;
+
+  try {
+    return JSON.parse(raw) as StoredUser;
+  } catch {
+    return null;
+  }
+}
+
 // COPIED FROM Dashboard.tsx 26:31
 interface DashboardLinkProps {
   labelText: string;
@@ -228,8 +246,14 @@ function JobFormContent({ pdbFile, onFileChange }: JobFormContentProps) {
 
     setLoading(true);
     try {
+      const user = getStoredUser(); // get user session from localStorage
+      if (!user?.id) {
+        throw new Error("User session not found. Please log in again.");
+      }
+
       const formData = new FormData();
       formData.append("pdbFile", pdbFile);
+      formData.append("userId", user.id);
       formData.append("contig", contig);
       formData.append("numberDesigns", numberDesigns);
       formData.append("timesteps", timesteps);

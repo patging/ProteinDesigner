@@ -35,9 +35,10 @@ export function LoginForm() {
         console.log("login was a success");
         console.log("login name" + " " + parsed.user.name)
         console.log("login response" + " " + parsed);
+        localStorage.setItem("pd_user", JSON.stringify(parsed.user)); // Store user data in localStorage for session persistence
         setSuccess(true);
         navigate("/home", {
-          state: { name: parsed.user.name },
+          state: { name: parsed.user.name, userId: parsed.user.id },
         });
       }
     } catch (e) {
