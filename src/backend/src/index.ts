@@ -225,6 +225,10 @@ app.post(
 
 const PORT = Number(process.env.PORT);
 
-app.listen(PORT, () => {
-  console.log("app listening on", `${PORT}`);
-});
+if (process.env.mode === "production") {
+  module.exports = app;
+} else {
+  app.listen(PORT, () => {
+    console.log("app listening on", `${PORT}`);
+  });
+}
