@@ -18,7 +18,7 @@ export function SignUpForm() {
   async function handleSignUp() {
     console.log("name, email, password", { name, email, password });
     try {
-      const res = await fetch("http://localhost:4000/signup", {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/signup`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

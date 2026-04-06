@@ -17,7 +17,7 @@ export function LoginForm() {
   async function handleLogin() {
     setSuccess(null);
     try {
-      const res = await fetch("http://localhost:4000/login", {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/login`, {
         method: "POST",
         credentials: "include",
         headers: {
@@ -34,7 +34,7 @@ export function LoginForm() {
         throw new Error(login_response.message || "problem with login");
       } else {
         console.log("login was a success");
-        console.log("login name" + " " + parsed.user.name)
+        console.log("login name" + " " + parsed.user.name);
         console.log("login response" + " " + parsed);
         setSuccess(true);
         await supabase.auth.setSession(parsed.session);
