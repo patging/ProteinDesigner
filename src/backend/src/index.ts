@@ -168,7 +168,11 @@ app.get("/me/:id", async (req, res) => {
 
 })
 
-
+/**
+ * GET /api/jobs
+ *
+ * List all jobs for the authenticated user, including job status and result URLs if available. Results are ordered by creation time, with most recent first.
+ */
 app.get("/api/jobs", async (req, res) => {
   // Validate userId query param
   const parsedUserId = z.uuid().safeParse(req.query.userId);
@@ -238,6 +242,75 @@ app.get("/api/jobs", async (req, res) => {
     return res.json({ jobs: response });
   } catch (err: any) {
     console.error("Error fetching jobs:", err);
+    return res.status(500).json({ message: err.message || "Unexpected error" });
+  }
+});
+
+/**
+ * GET /api/jobs/:jobId
+ *
+ * Get details for a specific job, including status and result URLs if available.
+ */
+app.get("/api/jobs/:jobId", async (req, res) => {
+  const parsedJobId = z.uuid().safeParse(req.params.jobId);
+  const parsedUserId = z.uuid().safeParse(req.query.userId);
+
+  if (!parsedJobId.success) {
+    return res.status(400).json({ message: "Invalid jobId" });
+  }
+  if (!parsedUserId.success) {
+    return res.status(400).json({ message: "userId query param is required" });
+  }
+
+  const jobId = parsedJobId.data;
+  const userId = parsedUserId.data;
+
+  try {
+    const { data: job, error: jobError } = await supabaseService
+      .from("jobs")
+      .select("job_id, user_id, job_status_id, job_start_time, job_input_file_url")
+      .eq("job_id", jobId)
+      .eq("user_id", userId)
+      .single();
+
+    if (jobError || !job) {
+      return res.status(404).json({ message: "Job not found" });
+    }
+
+    const { data: statusData, error: statusError } = await supabaseService
+      .from("job_status")
+      .select("job_status_message")
+      .eq("job_status_id", job.job_status_id)
+      .single();
+
+    if (statusError) {
+      throw statusError;
+    }
+
+    const { data: resultRows, error: resultError } = await supabaseService
+      .from("job_results")
+      .select("job_result_id, job_result_file_url")
+      .eq("job_id", jobId)
+      .order("job_result_id", { ascending: true })
+      .limit(1);
+
+    if (resultError) {
+      throw resultError;
+    }
+
+    const outputFileUrl = resultRows?.[0]?.job_result_file_url ?? null;
+
+    return res.json({
+      jobId: job.job_id,
+      status: statusData?.job_status_message ?? "missing",
+      createdAt: job.job_start_time,
+      inputFileUrl: job.job_input_file_url,
+      outputFileUrl,
+      designMethod: "RFDiffusion",
+      targetProtein: null,
+    });
+  } catch (err: any) {
+    console.error("Error fetching single job:", err);
     return res.status(500).json({ message: err.message || "Unexpected error" });
   }
 });
