@@ -25,6 +25,11 @@ import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import ExitToAppOutlinedIcon from "@mui/icons-material/ExitToAppOutlined";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import CloseIcon from "@mui/icons-material/Close";
+import InputAdornment from "@mui/material/InputAdornment";
+import OutlinedInput from "@mui/material/OutlinedInput";
+import SearchIcon from "@mui/icons-material/Search";
+import ToggleButton from "@mui/material/ToggleButton";
+import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 import { Link, useNavigate } from "react-router";
 import { DashboardTheme } from "../themes/DashboardTheme";
 import { JobStatus } from "../types/JobStatus";
@@ -60,6 +65,8 @@ type Job = {
 interface InnerTableProps {
   jobs: Job[];
   loading: boolean;
+  statusFilter: string;
+  searchQuery: string;
 }
 
 // Maps a job status string to a MUI Chip color + label
@@ -239,7 +246,7 @@ const bodyCellSx = {
   borderBottom: `1px solid ${grey[100]}`,
 };
 
-function InnerTable({ jobs, loading }: InnerTableProps) {
+function InnerTable({ jobs, loading, statusFilter, searchQuery }: InnerTableProps) {
   const navigate = useNavigate();
   const [openViewer, setOpenViewer] = useState(false);
   const [viewerProtein, setViewerProtein] = useState<Protein | undefined>();
@@ -444,15 +451,23 @@ function InnerTable({ jobs, loading }: InnerTableProps) {
         {!loading && jobs.length === 0 && (
           <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "300px" }}>
             <Box sx={{ textAlign: "center" }}>
-              <Typography sx={{ fontSize: "14px", color: grey[400], mb: "8px" }}>
-                No jobs yet
-              </Typography>
-              <Link
-                style={{ color: blue[600], fontWeight: 500, textDecoration: "none", fontSize: "13px" }}
-                to="/create"
-              >
-                Create your first design →
-              </Link>
+              {statusFilter !== "all" || searchQuery.trim() !== "" ? (
+                <Typography sx={{ fontSize: "14px", color: grey[400] }}>
+                  No {statusFilter !== "all" ? statusFilter : "matching"} jobs found
+                </Typography>
+              ) : (
+                <>
+                  <Typography sx={{ fontSize: "14px", color: grey[400], mb: "8px" }}>
+                    No jobs yet
+                  </Typography>
+                  <Link
+                    style={{ color: blue[600], fontWeight: 500, textDecoration: "none", fontSize: "13px" }}
+                    to="/create"
+                  >
+                    Create your first design →
+                  </Link>
+                </>
+              )}
             </Box>
           </Box>
         )}
@@ -535,6 +550,8 @@ function InnerTable({ jobs, loading }: InnerTableProps) {
 function DashboardTable() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState<string>("");
 
   useEffect(() => {
     const fetchJobs = async () => {
@@ -586,18 +603,71 @@ function DashboardTable() {
     fetchJobs();
   }, []);
 
+  const filteredJobs = jobs.filter((job) => {
+    const matchesStatus =
+      statusFilter === "all" || job.status.toLowerCase() === statusFilter;
+    const matchesSearch =
+      searchQuery.trim() === "" ||
+      job.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      job.job_id.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesStatus && matchesSearch;
+  });
+
   return (
     <Box sx={{ width: "100%" }}>
       <Typography variant="h1" sx={{ fontSize: "32pt", my: "16px" }}>
         Jobs
       </Typography>
-      <Box sx={{ mb: "20px" }}>
-        <DashboardSelect labelText="Tester" options={["Test1", "Test2"]} />
-        <DashboardSelect labelText="Tester" options={["Test1", "Test2"]} />
-        <DashboardSelect labelText="Tester" options={["Test1", "Test2"]} />
+
+      {/* Filter bar */}
+      <Box sx={{ display: "flex", alignItems: "center", gap: "12px", mb: "20px", flexWrap: "wrap" }}>
+        <OutlinedInput
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search by name or ID…"
+          size="small"
+          startAdornment={
+            <InputAdornment position="start">
+              <SearchIcon sx={{ fontSize: 16, color: grey[400] }} />
+            </InputAdornment>
+          }
+          sx={{ width: "260px", fontSize: "13px", borderRadius: "8px" }}
+        />
+
+        <Box sx={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <Typography sx={{ fontSize: "12px", color: grey[500] }}>Status</Typography>
+          <ToggleButtonGroup
+            value={statusFilter}
+            exclusive
+            onChange={(_, val) => { if (val !== null) setStatusFilter(val); }}
+            size="small"
+            sx={{
+              "& .MuiToggleButton-root": {
+                textTransform: "none",
+                fontSize: "12px",
+                px: "12px",
+                py: "4px",
+                borderRadius: "20px !important",
+                border: `1px solid ${grey[300]} !important`,
+                color: grey[600],
+                mx: "2px",
+              },
+              "& .Mui-selected": {
+                backgroundColor: `${grey[900]} !important`,
+                color: "white !important",
+              },
+            }}
+          >
+            <ToggleButton value="all">All</ToggleButton>
+            <ToggleButton value="running">Running</ToggleButton>
+            <ToggleButton value="completed">Completed</ToggleButton>
+            <ToggleButton value="failed">Failed</ToggleButton>
+            <ToggleButton value="pending">Pending</ToggleButton>
+          </ToggleButtonGroup>
+        </Box>
       </Box>
 
-      <InnerTable jobs={jobs} loading={loading} />
+      <InnerTable jobs={filteredJobs} loading={loading} statusFilter={statusFilter} searchQuery={searchQuery} />
     </Box>
   );
 }
