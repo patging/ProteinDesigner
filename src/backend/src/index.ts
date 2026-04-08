@@ -26,7 +26,7 @@ app.use(
   cors({
     origin: [
       "https://protein-designer-backend.vercel.app",
-      //"http://localhost:5173",
+      "http://localhost:5173",
     ],
     credentials: true,
   }),
@@ -233,10 +233,10 @@ app.post(
 
 const PORT = Number(process.env.PORT);
 
-if (process.env.mode === "production") {
-  module.exports = app;
-} else {
+if (process.env.mode !== "production") {
   app.listen(PORT, () => {
     console.log("app listening on", `${PORT}`);
   });
 }
+
+export default app;
