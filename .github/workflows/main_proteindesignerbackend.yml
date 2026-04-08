@@ -63,4 +63,12 @@ jobs:
           app-name: 'proteindesignerbackend'
           slot-name: 'Production'
           package: .
-          
+
+  run:
+      runs-on: ubuntu-latest
+      needs: deploy
+
+      steps:
+        - name: Run the program
+          working-directory: ./src/backend
+          run: npm run dev
