@@ -36,19 +36,18 @@ export async function getStatus(
 }
 
 export async function insertNewJob(
+  user_id: string,
   job_input_file_url: string,
   job_contig_string: string | null,
   job_status: WorkflowJobStatus,
   job_api_job_id: string | null,
 ): Promise<JobModel> {
-  const USERID = "4a35f59d-6452-4f2f-8643-897613bad336"; // VERY TEMPORARY TO:DO DELETE
-
   const status: JobStatusModel = await getStatus(job_status);
   const status_id = status.job_status_id;
   const { data, error } = await supabaseService
     .from("jobs")
     .insert({
-      user_id: USERID,
+      user_id,
       job_input_file_url: job_input_file_url,
       job_contig_string: job_contig_string,
       job_status_id: status_id,

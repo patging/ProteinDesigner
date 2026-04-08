@@ -177,9 +177,201 @@ app.get("/me/:id", async (req, res) => {
 
 })
 
+/**
+ * GET /api/jobs
+ *
+ * List all jobs for the authenticated user, including job status and result URLs if available. Results are ordered by creation time, with most recent first.
+ */
+app.get("/api/jobs", async (req, res) => {
+  // Validate userId query param
+  const parsedUserId = z.uuid().safeParse(req.query.userId);
+  if (!parsedUserId.success) {
+    return res.status(400).json({ message: "userId query param is required" });
+  }
 
+  try {
+    const userId = parsedUserId.data;
 
-// Neurosnap API Proxy Endpoint
+    // Query jobs table for all jobs belonging to the user, along with status and creation time. Order by creation time descending
+    const { data: jobsData, error: jobsError } = await supabaseService
+      .from("jobs")
+      .select("job_id, job_status_id, job_start_time, job_input_file_url")
+      .eq("user_id", userId)
+      .order("job_start_time", { ascending: false, nullsFirst: false });
+
+    if (jobsError) {
+      throw jobsError;
+    }
+
+    // Query job_status table to get mapping of status_id to status_message for all possible statuses
+    const { data: statusData, error: statusError } = await supabaseService
+      .from("job_status")
+      .select("job_status_id, job_status_message");
+
+    if (statusError) {
+      throw statusError;
+    }
+
+    const statusById = new Map<number, string>();
+    for (const status of statusData ?? []) {
+      statusById.set(status.job_status_id, status.job_status_message);
+    }
+
+    const jobIds = (jobsData ?? []).map((job) => job.job_id);
+    let resultByJobId = new Map<string, string>();
+
+    // If there are any jobs, query job_results table to get mapping of job_id to job_result_file_url for all jobs that have results
+    if (jobIds.length > 0) {
+      const { data: resultsData, error: resultsError } = await supabaseService
+        .from("job_results")
+        .select("job_id, job_result_file_url")
+        .in("job_id", jobIds);
+
+      if (resultsError) {
+        throw resultsError;
+      }
+
+      resultByJobId = new Map<string, string>(
+        (resultsData ?? []).map((result) => [
+          result.job_id,
+          result.job_result_file_url,
+        ]),
+      );
+    }
+
+    // Return results after querying all necessary tables, mapping job status and results to each job
+    const response = (jobsData ?? []).map((job) => ({
+      jobId: job.job_id,
+      status: statusById.get(job.job_status_id) ?? "missing",
+      createdAt: job.job_start_time,
+      inputFileUrl: job.job_input_file_url,
+      outputFileUrl: resultByJobId.get(job.job_id) ?? null,
+    }));
+
+    return res.json({ jobs: response });
+  } catch (err: any) {
+    console.error("Error fetching jobs:", err);
+    return res.status(500).json({ message: err.message || "Unexpected error" });
+  }
+});
+
+/**
+ * GET /api/jobs/:jobId
+ *
+ * Get details for a specific job, including status and result URLs if available.
+ */
+app.get("/api/jobs/:jobId", async (req, res) => {
+  const parsedJobId = z.uuid().safeParse(req.params.jobId);
+  const parsedUserId = z.uuid().safeParse(req.query.userId);
+
+  if (!parsedJobId.success) {
+    return res.status(400).json({ message: "Invalid jobId" });
+  }
+  if (!parsedUserId.success) {
+    return res.status(400).json({ message: "userId query param is required" });
+  }
+
+  const jobId = parsedJobId.data;
+  const userId = parsedUserId.data;
+
+  try {
+    const { data: job, error: jobError } = await supabaseService
+      .from("jobs")
+      .select("job_id, user_id, job_status_id, job_start_time, job_input_file_url")
+      .eq("job_id", jobId)
+      .eq("user_id", userId)
+      .single();
+
+    if (jobError || !job) {
+      return res.status(404).json({ message: "Job not found" });
+    }
+
+    const { data: statusData, error: statusError } = await supabaseService
+      .from("job_status")
+      .select("job_status_message")
+      .eq("job_status_id", job.job_status_id)
+      .single();
+
+    if (statusError) {
+      throw statusError;
+    }
+
+    const { data: resultRows, error: resultError } = await supabaseService
+      .from("job_results")
+      .select("job_result_id, job_result_file_url")
+      .eq("job_id", jobId)
+      .order("job_result_id", { ascending: true })
+      .limit(1);
+
+    if (resultError) {
+      throw resultError;
+    }
+
+    const outputFileUrl = resultRows?.[0]?.job_result_file_url ?? null;
+
+    return res.json({
+      jobId: job.job_id,
+      status: statusData?.job_status_message ?? "missing",
+      createdAt: job.job_start_time,
+      inputFileUrl: job.job_input_file_url,
+      outputFileUrl,
+      designMethod: "RFDiffusion",
+      targetProtein: null,
+    });
+  } catch (err: any) {
+    console.error("Error fetching single job:", err);
+    return res.status(500).json({ message: err.message || "Unexpected error" });
+  }
+});
+
+/**
+ * GET /api/blob-proxy
+ *
+ * Proxies a request to an Azure Blob Storage URL, returning the blob file contents.
+ */
+app.get("/api/blob-proxy", async (req, res) => {
+  const rawUrl = req.query.url;
+  if (typeof rawUrl !== "string" || rawUrl.length === 0) {
+    return res.status(400).json({ message: "url query param is required" });
+  }
+
+  let parsedUrl: URL;
+  try {
+    parsedUrl = new URL(rawUrl);
+  } catch {
+    return res.status(400).json({ message: "Invalid url" });
+  }
+
+  // Avoid SSRF by only allowing Azure Blob Storage URLs
+  if (parsedUrl.protocol !== "https:" || !parsedUrl.hostname.endsWith(".blob.core.windows.net")) {
+    return res.status(400).json({ message: "Only Azure blob URLs are allowed" });
+  }
+
+  try {
+    const upstream = await fetch(parsedUrl.toString(), { method: "GET" });
+    if (!upstream.ok) {
+      return res.status(upstream.status).json({
+        message: `Unable to fetch blob file (${upstream.status})`,
+      });
+    }
+
+    const arrayBuffer = await upstream.arrayBuffer();
+    const contentType =
+      upstream.headers.get("content-type") || "application/octet-stream";
+    const fileName = parsedUrl.pathname.split("/").pop() || "structure.pdb";
+
+    res.setHeader("Content-Type", contentType);
+    res.setHeader("Content-Length", String(arrayBuffer.byteLength));
+    res.setHeader("Cache-Control", "private, max-age=120");
+    res.setHeader("Content-Disposition", `inline; filename=\"${fileName}\"`);
+
+    return res.send(Buffer.from(arrayBuffer));
+  } catch (err: any) {
+    console.error("Blob proxy error:", err);
+    return res.status(500).json({ message: err.message || "Unexpected error" });
+  }
+});
+
 
 const upload = multer({ storage: multer.memoryStorage() });
 /**
@@ -196,11 +388,16 @@ app.post(
       return res.status(400).json({ message: "No PDB file provided" });
 
     const {
+      userId,
       contig,
       numberDesigns = "1",
       timesteps = "10",
       stepScale = "1.5",
     } = req.body;
+    const parsedUserId = z.uuid().safeParse(userId);
+    if (!parsedUserId.success) {
+      return res.status(400).json({ message: "userId is required" });
+    }
     if (!contig) return res.status(400).json({ message: "Contig is required" });
 
     const apiKey = process.env.NEUROSNAP_API_KEY;
@@ -228,6 +425,7 @@ app.post(
 
       // inserting into DB and then pushing to queue
       const jobData = await insertNewJob(
+        parsedUserId.data,
         inputFileAzureUrl,
         contig,
         WorkflowJobStatus.INQUEUE,

@@ -39,7 +39,7 @@ export function LoginForm() {
         setSuccess(true);
         await supabase.auth.setSession(parsed.session);
         navigate("/home", {
-          state: { name: parsed.user.name },
+          state: { name: parsed.user.name, userId: parsed.user.id },
         });
       }
     } catch (e) {

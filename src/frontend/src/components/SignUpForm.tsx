@@ -47,9 +47,8 @@ export function SignUpForm() {
       console.log("name" + " " + parsed.user.name)
       const session = parsed.session;
       await supabase.auth.setSession(session);
-
       navigate("/home", {
-        state: { name: parsed.user.name },
+        state: { name: parsed.user.name, userId: parsed.user.id },
       });
       
     } catch (e) {
