@@ -22,11 +22,7 @@ app.use(cookieParser());
 
 app.use(
   cors({
-    origin: [
-      "https://protein-designer-eight.vercel.app",
-      "https://protein-designer-backend.vercel.app",
-      "http://localhost:5173",
-    ],
+    origin: "*",
     credentials: true,
   }),
 );
