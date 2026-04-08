@@ -5,17 +5,15 @@ import { z } from "zod";
 import multer from "multer";
 import { v4 as uuidv4 } from "uuid";
 
-import { taskQueue } from "../api/TaskQueue.js";
+import { taskQueue } from "./api/TaskQueue.js";
 
-import { supabaseAnon, supabaseService } from "../api/supabaseClient.js";
+import { supabaseAnon, supabaseService } from "./api/supabaseClient.js";
 import {
   insertJobParameters,
   insertNewJob,
-  updateJobStatus,
   WorkflowJobStatus,
-} from "../api/supabaseService.js";
-import { sendNewRfDiffusion3Job } from "../api/neurosnapAPI.js";
-import { uploadFile } from "../api/azureBlobAPI.js";
+} from "./api/supabaseService.js";
+import { uploadFile } from "./api/azureBlobAPI.js";
 
 const app = express();
 
@@ -43,97 +41,98 @@ console.log(
 );
 
 app.post("/signup", async (req, res) => {
-    const Body = z.object({
-        name: z.string().min(1),
-        email: z.email(),
-        password: z.string().min(8),
-      });
+  const Body = z.object({
+    name: z.string().min(1),
+    email: z.email(),
+    password: z.string().min(8),
+  });
 
-    const parsed = Body.safeParse(req.body);
-    if(!parsed.success){
-        console.log("signup req body:", req.body)
-        return res.status(400).json({
-            message: "Invalid input",
-          });
-    }
-    const {name, email, password} = parsed.data;
-
-    const {data, error} = await supabaseAnon.auth.signUp({
-        email,
-        password
+  const parsed = Body.safeParse(req.body);
+  if (!parsed.success) {
+    console.log("signup req body:", req.body);
+    return res.status(400).json({
+      message: "Invalid input",
     });
+  }
+  const { name, email, password } = parsed.data;
 
-    if(error){
-        return res.status(400).json({message: error.message})
-    }
-    if(!data.user){
-        return res.status(400).json({message: "signup failed"})
-    }
+  const { data, error } = await supabaseAnon.auth.signUp({
+    email,
+    password,
+  });
 
-    const {error: e} = await supabaseService.from("user_profile").insert({
-        user_id: data.user.id,
-        user_name: name,
-        user_email: email
-    })
+  if (error) {
+    return res.status(400).json({ message: error.message });
+  }
+  if (!data.user) {
+    return res.status(400).json({ message: "signup failed" });
+  }
 
-    if(e){
-        console.error(e);
-        return res.status(500).json({
-            message: "Profile creation failed",
-        })
-    }
+  const { error: e } = await supabaseService.from("user_profile").insert({
+    user_id: data.user.id,
+    user_name: name,
+    user_email: email,
+  });
 
-    return res.json({
-        user: {
-            id: data.user.id,
-            email: data.user.email,
-            name: name
-        },
-        session: data.session,
-    })
+  if (e) {
+    console.error(e);
+    return res.status(500).json({
+      message: "Profile creation failed",
+    });
+  }
 
-})
+  return res.json({
+    user: {
+      id: data.user.id,
+      email: data.user.email,
+      name: name,
+    },
+    session: data.session,
+  });
+});
 
 app.post("/login", async (req, res) => {
-    const Body = z.object({
-        email: z.email(),
-        password: z.string().min(1)
-    })
-    const parsed = Body.safeParse(req.body)
-    if(!parsed.success){
-        console.log("error parsing body", req.body)
-        return res.status(400).json({message: "Invalid input"})
-    }
+  const Body = z.object({
+    email: z.email(),
+    password: z.string().min(1),
+  });
+  const parsed = Body.safeParse(req.body);
+  if (!parsed.success) {
+    console.log("error parsing body", req.body);
+    return res.status(400).json({ message: "Invalid input" });
+  }
 
-    const {email, password} = parsed.data
+  const { email, password } = parsed.data;
 
-    const {data, error} = await supabaseAnon.auth.signInWithPassword({
-        email,
-        password
-    })
-    if(error){
-        return res.status(400).json({message: error.message});
-    }
-    if(!data.user){
-        return res.status(400).json({message: "no user"})
-    }
+  const { data, error } = await supabaseAnon.auth.signInWithPassword({
+    email,
+    password,
+  });
+  if (error) {
+    return res.status(400).json({ message: error.message });
+  }
+  if (!data.user) {
+    return res.status(400).json({ message: "no user" });
+  }
 
-    const {data: userProfile, error: error2} = await supabaseService.from("user_profile").select("user_name").eq("user_id", data.user.id).single();
-    console.log(userProfile);
-    if(error2){
-        return res.status(401).json({message: "Profile fetch failed"});
-    }
-    return res.json({
-        user: {
-            id: data.user.id,
-            email: data.user.email,
-            name: userProfile.user_name
-        },
-        session: data.session
-    })
-    
-})
-
+  const { data: userProfile, error: error2 } = await supabaseService
+    .from("user_profile")
+    .select("user_name")
+    .eq("user_id", data.user.id)
+    .single();
+  console.log(userProfile);
+  if (error2) {
+    return res.status(401).json({ message: "Profile fetch failed" });
+  }
+  return res.json({
+    user: {
+      id: data.user.id,
+      email: data.user.email,
+      name: userProfile.user_name,
+    },
+    session: data.session,
+  });
+});
 
 // app.post("/logout", async (req, res) => {
 //     const {error} = await supabaseAnon.auth.signOut();
@@ -141,7 +140,7 @@ app.post("/login", async (req, res) => {
 //         console.log(error.message || "Error with signing out")
 //         return res.status(500).json({message: "Error with signing out"})
 //     }
-    
+
 //     return res.status(200).json(
 //         {
 //             message: "Successfully signed out of ProteinDesigner"
@@ -150,32 +149,35 @@ app.post("/login", async (req, res) => {
 // })
 
 app.get("/me/:id", async (req, res) => {
-    const {id} = req.params;
-    if(!id){
-        console.log("no id in the request, check communication");
-        return res.status(400).json({message: "No id given"})
-    }
+  const { id } = req.params;
+  if (!id) {
+    console.log("no id in the request, check communication");
+    return res.status(400).json({ message: "No id given" });
+  }
 
-    const {data: profile, error: profileError} = await supabaseService
-        .from("user_profile")
-        .select("user_name, user_email")
-        .eq("user_id", id)
-        .single()
-    
-    if(profileError || !profile){
-        console.log(profileError?.message || "There was an error when fetching profile from user table in supabase");
-        return res.status(400).json({message: "problem fetching profile from supabase"})
-    }
-    return res.json({
-        user: {
-            name: profile.user_name,
-            email: profile.user_email,
-            id: id
-        }
-    })
+  const { data: profile, error: profileError } = await supabaseService
+    .from("user_profile")
+    .select("user_name, user_email")
+    .eq("user_id", id)
+    .single();
 
-
-})
+  if (profileError || !profile) {
+    console.log(
+      profileError?.message ||
+        "There was an error when fetching profile from user table in supabase",
+    );
+    return res
+      .status(400)
+      .json({ message: "problem fetching profile from supabase" });
+  }
+  return res.json({
+    user: {
+      name: profile.user_name,
+      email: profile.user_email,
+      id: id,
+    },
+  });
+});
 
 /**
  * GET /api/jobs
@@ -277,7 +279,9 @@ app.get("/api/jobs/:jobId", async (req, res) => {
   try {
     const { data: job, error: jobError } = await supabaseService
       .from("jobs")
-      .select("job_id, user_id, job_status_id, job_start_time, job_input_file_url")
+      .select(
+        "job_id, user_id, job_status_id, job_start_time, job_input_file_url",
+      )
       .eq("job_id", jobId)
       .eq("user_id", userId)
       .single();
@@ -343,8 +347,13 @@ app.get("/api/blob-proxy", async (req, res) => {
   }
 
   // Avoid SSRF by only allowing Azure Blob Storage URLs
-  if (parsedUrl.protocol !== "https:" || !parsedUrl.hostname.endsWith(".blob.core.windows.net")) {
-    return res.status(400).json({ message: "Only Azure blob URLs are allowed" });
+  if (
+    parsedUrl.protocol !== "https:" ||
+    !parsedUrl.hostname.endsWith(".blob.core.windows.net")
+  ) {
+    return res
+      .status(400)
+      .json({ message: "Only Azure blob URLs are allowed" });
   }
 
   try {
@@ -371,7 +380,6 @@ app.get("/api/blob-proxy", async (req, res) => {
     return res.status(500).json({ message: err.message || "Unexpected error" });
   }
 });
-
 
 const upload = multer({ storage: multer.memoryStorage() });
 /**
