@@ -74,10 +74,14 @@ function StatusChip({ status }: { status: string }) {
   const s = status.toLowerCase();
 
   const config: Record<string, { label: string; bg: string; color: string }> = {
-    [JobStatus.COMPLETED]: { label: "Completed", bg: green[50],  color: green[800] },
-    [JobStatus.FAILED]:    { label: "Failed",    bg: red[50],    color: red[800]   },
-    pending:               { label: "Pending",   bg: orange[50], color: orange[800]},
-    running:               { label: "Running",   bg: blue[50],   color: blue[800]  },
+    [JobStatus.COMPLETED]: {
+      label: "Completed",
+      bg: green[50],
+      color: green[800],
+    },
+    [JobStatus.FAILED]: { label: "Failed", bg: red[50], color: red[800] },
+    pending: { label: "Pending", bg: orange[50], color: orange[800] },
+    running: { label: "Running", bg: blue[50], color: blue[800] },
   };
 
   const cfg = config[s] ?? { label: status, bg: grey[100], color: grey[700] };
@@ -98,7 +102,12 @@ function StatusChip({ status }: { status: string }) {
   );
 }
 
-function DashboardLink({ labelText, linkTo, children, onClick }: DashboardLinkProps) {
+function DashboardLink({
+  labelText,
+  linkTo,
+  children,
+  onClick,
+}: DashboardLinkProps) {
   const backgroundColor = location.pathname === linkTo ? grey[200] : "white";
 
   return (
@@ -129,35 +138,37 @@ function DashboardLink({ labelText, linkTo, children, onClick }: DashboardLinkPr
 }
 
 export function DashboardPanel() {
-  const [name, setName] = useState("")
+  const [name, setName] = useState("");
   useEffect(() => {
     const currentUser = async () => {
       const { data } = await supabase.auth.getUser();
-      if(!data.user){
-        console.log("error with supabase returning a user, maybe session problem")
+      if (!data.user) {
+        console.log(
+          "error with supabase returning a user, maybe session problem",
+        );
         return;
       }
       const res = await fetch(`http://localhost:4000/me/${data.user.id}`);
-      if(!res){
-        console.log("error fetching from our backend endpoint me")
+      if (!res) {
+        console.log("error fetching from our backend endpoint me");
         return;
       }
       const parsed = await res.json();
-      if(!parsed){
+      if (!parsed) {
         console.log("error parsing me response data");
       }
       setName(parsed.user.name);
-
-    }
+    };
     currentUser();
-
   }, []);
   const navigate = useNavigate();
 
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) {
-      console.log("There is an error signing out, check handleLogout in Dashboard.tsx");
+      console.log(
+        "There is an error signing out, check handleLogout in Dashboard.tsx",
+      );
       return;
     }
     console.log("Logout was successful.");
@@ -218,7 +229,9 @@ function DashboardSelect({ labelText, options }: DashboardSelectProps) {
           <em>None</em>
         </MenuItem>
         {options.map((val) => (
-          <MenuItem key={val} value={val}>{val}</MenuItem>
+          <MenuItem key={val} value={val}>
+            {val}
+          </MenuItem>
         ))}
       </Select>
     </FormControl>
@@ -246,7 +259,12 @@ const bodyCellSx = {
   borderBottom: `1px solid ${grey[100]}`,
 };
 
-function InnerTable({ jobs, loading, statusFilter, searchQuery }: InnerTableProps) {
+function InnerTable({
+  jobs,
+  loading,
+  statusFilter,
+  searchQuery,
+}: InnerTableProps) {
   const navigate = useNavigate();
   const [openViewer, setOpenViewer] = useState(false);
   const [viewerProtein, setViewerProtein] = useState<Protein | undefined>();
@@ -346,23 +364,35 @@ function InnerTable({ jobs, loading, statusFilter, searchQuery }: InnerTableProp
                 }}
               >
                 {/* Job Name */}
-                <TableCell sx={{ ...bodyCellSx, fontWeight: 600, color: grey[900] }}>
+                <TableCell
+                  sx={{ ...bodyCellSx, fontWeight: 600, color: grey[900] }}
+                >
                   {job.name}
                 </TableCell>
 
                 {/* Status */}
                 <TableCell sx={bodyCellSx}>
-                  <Box sx={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                  <Box
+                    sx={{ display: "flex", alignItems: "center", gap: "6px" }}
+                  >
                     <StatusChip status={job.status} />
                     {(job.status.toLowerCase() === JobStatus.COMPLETED ||
                       job.status.toLowerCase() === JobStatus.FAILED) && (
-                      <OpenInNewIcon sx={{ height: "14px", width: "14px", color: grey[400] }} />
+                      <OpenInNewIcon
+                        sx={{ height: "14px", width: "14px", color: grey[400] }}
+                      />
                     )}
                   </Box>
                 </TableCell>
 
                 {/* Created */}
-                <TableCell sx={{ ...bodyCellSx, color: grey[500], fontVariantNumeric: "tabular-nums" }}>
+                <TableCell
+                  sx={{
+                    ...bodyCellSx,
+                    color: grey[500],
+                    fontVariantNumeric: "tabular-nums",
+                  }}
+                >
                   {job.timeCreated}
                 </TableCell>
 
@@ -370,7 +400,9 @@ function InnerTable({ jobs, loading, statusFilter, searchQuery }: InnerTableProp
                 <TableCell sx={bodyCellSx}>
                   {job.proteinInputUrl ? (
                     <Typography
-                      onClick={() => handleOpenViewer(job.proteinInputUrl, "Input Structure")}
+                      onClick={() =>
+                        handleOpenViewer(job.proteinInputUrl, "Input Structure")
+                      }
                       sx={{
                         fontSize: "13px",
                         color: blue[600],
@@ -379,23 +411,35 @@ function InnerTable({ jobs, loading, statusFilter, searchQuery }: InnerTableProp
                         display: "inline-flex",
                         alignItems: "center",
                         gap: "4px",
-                        "&:hover": { color: blue[800], textDecoration: "underline" },
+                        "&:hover": {
+                          color: blue[800],
+                          textDecoration: "underline",
+                        },
                       }}
                     >
                       {job.proteinInput}
                       <OpenInNewIcon sx={{ width: "13px", height: "13px" }} />
                     </Typography>
                   ) : (
-                    <Typography sx={{ fontSize: "13px", color: grey[400] }}>—</Typography>
+                    <Typography sx={{ fontSize: "13px", color: grey[400] }}>
+                      —
+                    </Typography>
                   )}
                 </TableCell>
 
                 {/* Protein Design Let's load this protein into memory via blob, then pass the local file into the molstar viewer*/}
                 <TableCell sx={bodyCellSx}>
-                  <Box sx={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                  <Box
+                    sx={{ display: "flex", gap: "8px", alignItems: "center" }}
+                  >
                     {job.proteinDesignUrl ? (
                       <Typography
-                        onClick={() => handleOpenViewer(job.proteinDesignUrl, "Designed Structure")}
+                        onClick={() =>
+                          handleOpenViewer(
+                            job.proteinDesignUrl,
+                            "Designed Structure",
+                          )
+                        }
                         sx={{
                           fontSize: "13px",
                           color: blue[600],
@@ -404,14 +448,19 @@ function InnerTable({ jobs, loading, statusFilter, searchQuery }: InnerTableProp
                           display: "inline-flex",
                           alignItems: "center",
                           gap: "4px",
-                          "&:hover": { color: blue[800], textDecoration: "underline" },
+                          "&:hover": {
+                            color: blue[800],
+                            textDecoration: "underline",
+                          },
                         }}
                       >
                         {job.proteinDesign}
                         <OpenInNewIcon sx={{ width: "13px", height: "13px" }} />
                       </Typography>
                     ) : (
-                      <Typography sx={{ fontSize: "13px", color: grey[400] }}>—</Typography>
+                      <Typography sx={{ fontSize: "13px", color: grey[400] }}>
+                        —
+                      </Typography>
                     )}
                     {job.status.toLowerCase() === JobStatus.COMPLETED && (
                       <Button
@@ -426,7 +475,10 @@ function InnerTable({ jobs, loading, statusFilter, searchQuery }: InnerTableProp
                           borderRadius: "6px",
                           borderColor: grey[300],
                           color: grey[700],
-                          "&:hover": { borderColor: grey[500], backgroundColor: grey[50] },
+                          "&:hover": {
+                            borderColor: grey[500],
+                            backgroundColor: grey[50],
+                          },
                         }}
                       >
                         Results
@@ -440,7 +492,15 @@ function InnerTable({ jobs, loading, statusFilter, searchQuery }: InnerTableProp
         </Table>
 
         {loading && (
-          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "300px", gap: "10px" }}>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              minHeight: "300px",
+              gap: "10px",
+            }}
+          >
             <CircularProgress size={24} />
             <Typography sx={{ fontSize: "14px", color: grey[500] }}>
               Loading jobs...
@@ -449,19 +509,34 @@ function InnerTable({ jobs, loading, statusFilter, searchQuery }: InnerTableProp
         )}
 
         {!loading && jobs.length === 0 && (
-          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "300px" }}>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              minHeight: "300px",
+            }}
+          >
             <Box sx={{ textAlign: "center" }}>
               {statusFilter !== "all" || searchQuery.trim() !== "" ? (
                 <Typography sx={{ fontSize: "14px", color: grey[400] }}>
-                  No {statusFilter !== "all" ? statusFilter : "matching"} jobs found
+                  No {statusFilter !== "all" ? statusFilter : "matching"} jobs
+                  found
                 </Typography>
               ) : (
                 <>
-                  <Typography sx={{ fontSize: "14px", color: grey[400], mb: "8px" }}>
+                  <Typography
+                    sx={{ fontSize: "14px", color: grey[400], mb: "8px" }}
+                  >
                     No jobs yet
                   </Typography>
                   <Link
-                    style={{ color: blue[600], fontWeight: 500, textDecoration: "none", fontSize: "13px" }}
+                    style={{
+                      color: blue[600],
+                      fontWeight: 500,
+                      textDecoration: "none",
+                      fontSize: "13px",
+                    }}
                     to="/create"
                   >
                     Create your first design →
@@ -497,7 +572,11 @@ function InnerTable({ jobs, loading, statusFilter, searchQuery }: InnerTableProp
           }}
         >
           {viewerTitle}
-          <IconButton onClick={handleCloseViewer} size="small" sx={{ color: grey[500] }}>
+          <IconButton
+            onClick={handleCloseViewer}
+            size="small"
+            sx={{ color: grey[500] }}
+          >
             <CloseIcon fontSize="small" />
           </IconButton>
         </DialogTitle>
@@ -532,7 +611,9 @@ function InnerTable({ jobs, loading, statusFilter, searchQuery }: InnerTableProp
                 p: "24px",
               }}
             >
-              <Typography sx={{ color: red[700], fontSize: "13px", textAlign: "center" }}>
+              <Typography
+                sx={{ color: red[700], fontSize: "13px", textAlign: "center" }}
+              >
                 {viewerError}
               </Typography>
             </Box>
@@ -567,11 +648,12 @@ function DashboardTable() {
 
         const response = await fetch(
           `http://localhost:4000/api/jobs?userId=${encodeURIComponent(data.user.id)}`,
-          { method: "GET", credentials: "include" }
+          { method: "GET", credentials: "include" },
         );
 
         const payload = await response.json();
-        if (!response.ok) throw new Error(payload.message || response.statusText);
+        if (!response.ok)
+          throw new Error(payload.message || response.statusText);
 
         const jobsData = payload.jobs ?? [];
 
@@ -620,7 +702,15 @@ function DashboardTable() {
       </Typography>
 
       {/* Filter bar */}
-      <Box sx={{ display: "flex", alignItems: "center", gap: "12px", mb: "20px", flexWrap: "wrap" }}>
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          gap: "12px",
+          mb: "20px",
+          flexWrap: "wrap",
+        }}
+      >
         <OutlinedInput
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
@@ -635,11 +725,15 @@ function DashboardTable() {
         />
 
         <Box sx={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <Typography sx={{ fontSize: "12px", color: grey[500] }}>Status</Typography>
+          <Typography sx={{ fontSize: "12px", color: grey[500] }}>
+            Status
+          </Typography>
           <ToggleButtonGroup
             value={statusFilter}
             exclusive
-            onChange={(_, val) => { if (val !== null) setStatusFilter(val); }}
+            onChange={(_, val) => {
+              if (val !== null) setStatusFilter(val);
+            }}
             size="small"
             sx={{
               "& .MuiToggleButton-root": {
@@ -667,7 +761,12 @@ function DashboardTable() {
         </Box>
       </Box>
 
-      <InnerTable jobs={filteredJobs} loading={loading} statusFilter={statusFilter} searchQuery={searchQuery} />
+      <InnerTable
+        jobs={filteredJobs}
+        loading={loading}
+        statusFilter={statusFilter}
+        searchQuery={searchQuery}
+      />
     </Box>
   );
 }
