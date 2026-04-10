@@ -5,6 +5,7 @@ import { Dashboard } from "./Dashboard";
 import { JobForm } from "./JobForm";
 import { Settings } from "./Settings"
 import { JobResults } from "./JobResults";
+import { ProtectedRoute } from "./ProtectedRoute";
 
 /**
  * AppRouter
@@ -19,10 +20,41 @@ export function AppRouter() {
         <Route path="/" element={<LoginForm />} />
         <Route path="/login" element={<LoginForm />} />
         <Route path="/signup" element={<SignUpForm />} />
-        <Route path="/home" element={<Dashboard />} />
-        <Route path="/create" element={<JobForm />} />
-        <Route path="/settings" element={<Settings />} />
-        <Route path="/results/:jobId" element={<JobResults />} />
+        <Route
+          path="/home"
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/create"
+          element={
+            <ProtectedRoute>
+              <JobForm />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/settings"
+          element={
+            <ProtectedRoute>
+              <Settings />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/results/:jobId"
+          element={
+            <ProtectedRoute>
+              <JobResults />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
     </BrowserRouter>
   );
