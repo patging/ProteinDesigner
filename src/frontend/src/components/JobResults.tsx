@@ -23,7 +23,7 @@ type JobResult = {
 };
 
 function proxyUrl(blobUrl: string): string {
-  return `http://localhost:4000/api/blob-proxy?url=${encodeURIComponent(blobUrl)}`;
+  return `${import.meta.env.VITE_API_URL}/api/blob-proxy?url=${encodeURIComponent(blobUrl)}`;
 }
 
 // Component to display metadata
@@ -97,7 +97,7 @@ export function JobResults() {
           throw new Error("User session not found. Please log in again.");
 
         const res = await fetch(
-          `http://localhost:4000/api/jobs/${encodeURIComponent(jobId)}?userId=${encodeURIComponent(userData.user.id)}`,
+          `${import.meta.env.VITE_API_URL}/api/jobs/${encodeURIComponent(jobId)}?userId=${encodeURIComponent(userData.user.id)}`,
           { method: "GET", credentials: "include" },
         );
         const data = await res.json();
@@ -153,11 +153,9 @@ export function JobResults() {
         const blob = await response.blob();
         const text = await blob.text();
 
-        const file = new File(
-          [text],
-          `${result.jobId}.pdb`,
-          { type: "chemical/x-pdb" },
-        );
+        const file = new File([text], `${result.jobId}.pdb`, {
+          type: "chemical/x-pdb",
+        });
 
         setProtein({ file });
       } catch (err: any) {
