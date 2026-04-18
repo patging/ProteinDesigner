@@ -209,35 +209,39 @@ app.get("/api/jobs", async (req, res) => {
     }
 
     const jobIds = (jobsData ?? []).map((job) => job.job_id);
-    let resultByJobId = new Map<string, string>();
+    let resultsByJobId = new Map<string, string[]>();
 
     // If there are any jobs, query job_results table to get mapping of job_id to job_result_file_url for all jobs that have results
     if (jobIds.length > 0) {
       const { data: resultsData, error: resultsError } = await supabaseService
         .from("job_results")
-        .select("job_id, job_result_file_url")
-        .in("job_id", jobIds);
+        .select("job_id, job_result_id, job_result_file_url")
+        .in("job_id", jobIds)
+        .order("job_result_id", { ascending: true });
 
       if (resultsError) {
         throw resultsError;
       }
 
-      resultByJobId = new Map<string, string>(
-        (resultsData ?? []).map((result) => [
-          result.job_id,
-          result.job_result_file_url,
-        ]),
-      );
+      for (const result of resultsData ?? []) {
+        const existing = resultsByJobId.get(result.job_id) ?? [];
+        existing.push(result.job_result_file_url);
+        resultsByJobId.set(result.job_id, existing);
+      }
     }
 
     // Return results after querying all necessary tables, mapping job status and results to each job
-    const response = (jobsData ?? []).map((job) => ({
-      jobId: job.job_id,
-      status: statusById.get(job.job_status_id) ?? "missing",
-      createdAt: job.job_start_time,
-      inputFileUrl: job.job_input_file_url,
-      outputFileUrl: resultByJobId.get(job.job_id) ?? null,
-    }));
+    const response = (jobsData ?? []).map((job) => {
+      const outputFileUrls = resultsByJobId.get(job.job_id) ?? [];
+      return {
+        jobId: job.job_id,
+        status: statusById.get(job.job_status_id) ?? "missing",
+        createdAt: job.job_start_time,
+        inputFileUrl: job.job_input_file_url,
+        outputFileUrl: outputFileUrls[0] ?? null,
+        outputFileUrls,
+      };
+    });
 
     return res.json({ jobs: response });
   } catch (err: any) {
@@ -268,7 +272,7 @@ app.get("/api/jobs/:jobId", async (req, res) => {
   try {
     const { data: job, error: jobError } = await supabaseService
       .from("jobs")
-      .select("job_id, user_id, job_status_id, job_start_time, job_input_file_url")
+      .select("job_id, user_id, job_status_id, job_start_time, job_input_file_url, job_contig_string")
       .eq("job_id", jobId)
       .eq("user_id", userId)
       .single();
@@ -287,18 +291,41 @@ app.get("/api/jobs/:jobId", async (req, res) => {
       throw statusError;
     }
 
+    const { data: parameterRows, error: parameterError } = await supabaseService
+      .from("job_parameters")
+      .select("job_parameter_param_key, job_parameter_param_value")
+      .eq("job_id", jobId);
+
+    if (parameterError) {
+      throw parameterError;
+    }
+
+    const parameterMap = new Map<string, string>();
+    for (const row of parameterRows ?? []) {
+      parameterMap.set(row.job_parameter_param_key, row.job_parameter_param_value);
+    }
+
+    const jobParameters = {
+      contig: parameterMap.get("contig") ?? job.job_contig_string ?? null,
+      numDesigns: parameterMap.get("numDesigns") ?? null,
+      timeSteps: parameterMap.get("timeSteps") ?? null,
+      stepScale: parameterMap.get("stepScale") ?? null,
+    };
+
     const { data: resultRows, error: resultError } = await supabaseService
       .from("job_results")
       .select("job_result_id, job_result_file_url")
       .eq("job_id", jobId)
-      .order("job_result_id", { ascending: true })
-      .limit(1);
+      .order("job_result_id", { ascending: true });
 
     if (resultError) {
       throw resultError;
     }
 
-    const outputFileUrl = resultRows?.[0]?.job_result_file_url ?? null;
+    const outputFileUrls = (resultRows ?? []).map(
+      (row) => row.job_result_file_url,
+    );
+    const outputFileUrl = outputFileUrls[0] ?? null;
 
     return res.json({
       jobId: job.job_id,
@@ -306,6 +333,8 @@ app.get("/api/jobs/:jobId", async (req, res) => {
       createdAt: job.job_start_time,
       inputFileUrl: job.job_input_file_url,
       outputFileUrl,
+      outputFileUrls,
+      jobParameters,
       designMethod: "RFDiffusion",
       targetProtein: null,
     });

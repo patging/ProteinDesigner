@@ -16,9 +16,8 @@ import {
   CircularProgress,
 } from "@mui/material";
 import { blue, grey, green, red, orange } from "@mui/material/colors";
-import { type SvgIconProps, MenuItem, FormControl } from "@mui/material";
+import { type SvgIconProps } from "@mui/material";
 import { ThemeProvider } from "@mui/material/styles";
-import Select from "@mui/material/Select";
 import SpaceDashboardOutlinedIcon from "@mui/icons-material/SpaceDashboardOutlined";
 import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
@@ -46,11 +45,6 @@ interface DashboardLinkProps {
   children: React.ReactNode & SvgIconProps;
 }
 
-interface DashboardSelectProps {
-  labelText: string;
-  options: string[];
-}
-
 type Job = {
   job_id: string;
   name: string;
@@ -60,6 +54,7 @@ type Job = {
   proteinInputUrl: string;
   proteinDesign: string;
   proteinDesignUrl: string;
+  proteinDesignUrls: string[];
 };
 
 interface InnerTableProps {
@@ -213,28 +208,6 @@ export function DashboardPanel() {
         </DashboardLink>
       </Box>
     </Box>
-  );
-}
-
-function DashboardSelect({ labelText, options }: DashboardSelectProps) {
-  return (
-    <FormControl sx={{ mr: "12px" }}>
-      <Select
-        value={""}
-        displayEmpty
-        sx={{ width: "128px", maxHeight: "32px", bgcolor: grey[200] }}
-        inputProps={{ "aria-label": labelText }}
-      >
-        <MenuItem value="">
-          <em>None</em>
-        </MenuItem>
-        {options.map((val) => (
-          <MenuItem key={val} value={val}>
-            {val}
-          </MenuItem>
-        ))}
-      </Select>
-    </FormControl>
   );
 }
 
@@ -669,8 +642,13 @@ function DashboardTable() {
             timeCreated: created,
             proteinInput: "Input",
             proteinInputUrl: job.inputFileUrl || "",
-            proteinDesign: job.outputFileUrl ? "Design" : "-",
-            proteinDesignUrl: job.outputFileUrl || "",
+            proteinDesign:
+              job.outputFileUrls?.length > 0
+                ? `Designs (${job.outputFileUrls.length})`
+                : "-",
+            proteinDesignUrl:
+              job.outputFileUrls?.[0] || job.outputFileUrl || "",
+            proteinDesignUrls: job.outputFileUrls || [],
           };
         });
 
