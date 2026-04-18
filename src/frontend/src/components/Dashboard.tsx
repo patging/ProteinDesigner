@@ -319,7 +319,7 @@ function InnerTable({
         <Table stickyHeader>
           <TableHead>
             <TableRow>
-              <TableCell sx={headerCellSx}>Job Name</TableCell>
+              <TableCell sx={headerCellSx}>Job ID</TableCell>
               <TableCell sx={headerCellSx}>Status</TableCell>
               <TableCell sx={headerCellSx}>Created</TableCell>
               <TableCell sx={headerCellSx}>Protein Input</TableCell>
