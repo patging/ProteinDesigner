@@ -23,6 +23,11 @@ One of the models that fascinated us was [RFDiffusion3](https://www.ipd.uw.edu/2
 
 <img width="632" height="354" alt="Screenshot 2026-04-18 at 12 09 59 PM" src="https://github.com/user-attachments/assets/b010a723-fb1e-4168-8ee6-fac1430d085a" />
 
-### See more:
+### Avenues of Improvement
+- Decouple task queue and workflow from monolith to a seperated queue and serverless functions
+- Interface with more models and have more workflows
+- Automatic database and blob storage pruning (removing dated and inactive files)
+
+### See More:
 - [How the workflow works](https://github.com/patging/ProteinDesigner/blob/main/docs/WorkflowExplained.md)
-- Gallery of features
+- [Gallery of features](https://github.com/patging/ProteinDesigner/blob/main/docs/Gallery.md)
