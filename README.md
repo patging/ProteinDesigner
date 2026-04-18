@@ -21,6 +21,8 @@ One of the models that fascinated us was [RFDiffusion3](https://www.ipd.uw.edu/2
 - Fastq for task queue on the backend monolith
 - Neurosnap for RFDiffusion3 Interfacing
 
+<img width="632" height="354" alt="Screenshot 2026-04-18 at 12 09 59 PM" src="https://github.com/user-attachments/assets/b010a723-fb1e-4168-8ee6-fac1430d085a" />
+
 ### See more:
 - How the workflow works
 - Gallery of features
