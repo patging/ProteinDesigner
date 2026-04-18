@@ -23,4 +23,6 @@
 
 ### Job Results Page
 <img width="1413" height="664" alt="image" src="https://github.com/user-attachments/assets/c2001cfa-c877-4dd4-9f67-0d193f88a9fe" />
+
+### Job Results Page Continued
 <img width="1413" height="657" alt="image" src="https://github.com/user-attachments/assets/cfda7974-26a0-4d59-a8a0-9a3ef69c6489" />
