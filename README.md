@@ -1,5 +1,5 @@
 # Protein Designer
-
+### By Eric Guan, Kartik Vanjani, and Patrick Ging
 Proteins are responsible for every biological function of life, from DNA replication to powering muscle contraction. By designing new proteins from scratch, it becomes possible to create targeted therapeutics to treat diseases.
 
 While there exists many tools to facilitate protein design, they often take the form of CLI tools that require an prohibitive amount of technical literacy and file management. Our hope is to reduce this barrier by handling the execution of models, file and metadata management, and doing it all in a resource friendly way. 
