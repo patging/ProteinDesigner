@@ -42,8 +42,8 @@ console.log(
 app.post("/signup", async (req, res) => {
   const Body = z.object({
     name: z.string().min(1),
-    email: z.email(),
-    password: z.string().min(8),
+    email: z.string().trim().email(),
+    password: z.string().min(8).trim(),
   });
 
   const parsed = Body.safeParse(req.body);
@@ -92,8 +92,8 @@ app.post("/signup", async (req, res) => {
 
 app.post("/login", async (req, res) => {
   const Body = z.object({
-    email: z.email(),
-    password: z.string().min(1),
+    email: z.string().trim().email(),
+    password: z.string().min(1).trim(),
   });
   const parsed = Body.safeParse(req.body);
   if (!parsed.success) {
