@@ -123,10 +123,13 @@ function JobFormContent({ pdbFile, onFileChange }: JobFormContentProps) {
       formData.append("timesteps", timesteps);
       formData.append("stepScale", stepScale);
 
-      const res = await fetch(`http://localhost:4000/api/submit-rfdiffusion3`, {
-        method: "POST",
-        body: formData,
-      });
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/submit-rfdiffusion3`,
+        {
+          method: "POST",
+          body: formData,
+        },
+      );
 
       const responseData = await res.json();
       if (!res.ok) throw new Error(responseData.message || res.statusText);

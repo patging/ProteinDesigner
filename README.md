@@ -1,21 +1,33 @@
-# ProteinDesigner
+# Protein Designer
+### By Eric Guan, Kartik Vanjani, and Patrick Ging
+Proteins are responsible for every biological function of life, from DNA replication to powering muscle contraction. By designing new proteins from scratch, it becomes possible to create targeted therapeutics to treat diseases.
 
-Proteins are responsible for every biological function of life, from replicating DNA to powering muscle contraction.
+While there exists many tools to facilitate protein design, they often take the form of CLI tools that require an prohibitive amount of technical literacy and file management. Our hope is to reduce this barrier by handling the execution of models, file and metadata management, and doing it all in a resource friendly way. 
 
-By designing proteins from scratch, it becomes possible to create hyper-targeted therapeutics to fight diseases.
+### Our solution:
+One of the models that fascinated us was [RFDiffusion3](https://www.ipd.uw.edu/2025/12/rfdiffusion3-now-available/), a diffusion model for creating new proteins given an base protein and a section that should remain in the new model produced. We decided to make a web platform that allows users to run RFDiffusion3 from end to end without the need for CLI tools or local hardware. 
 
-We want to design a web interface to support scientific research in protein design.
+<img width="1854" height="904" alt="image" src="https://github.com/user-attachments/assets/960d01b5-d889-4d5f-8fa6-9789eae22995" />
 
-This project will provide an intuitive UI alternative to complex CMD commands and tedious file management.
 
-Currently, diffusion models are some of the most powerful methods for protein design
+### Tech Stack and APIs:
+- React / Vite for the Frontend Framework
+- ExpressJS for the backend
+- PostgreSQL for the relational database hosted on Supabase
+- Microsoft Azure Blob Storage for Blob Storage
+- Frontend hosting on Vercel
+- Backend hosting on Microsoft Azure Cloud
+- Molstar for the frontend protein visualization
+- Fastq for task queue on the backend monolith
+- Neurosnap for RFDiffusion3 Interfacing
 
-RFDiffusion is a deep learning method that can generate novel proteins that “fits” into a static structure
+<img width="632" height="354" alt="Screenshot 2026-04-18 at 12 09 59 PM" src="https://github.com/user-attachments/assets/b010a723-fb1e-4168-8ee6-fac1430d085a" />
 
-This is very useful to design drugs that purposely block harmful proteins or viruses from “locking” onto our healthy cells
+### Avenues of Improvement
+- Decouple task queue and workflow from monolith to a seperated queue and serverless functions
+- Interface with more models and have more workflows
+- Automatic database and blob storage pruning (removing dated and inactive files)
 
-RFDiffusion, and other technology like it, can be difficult for non-technical scientists to utilize
-
-It requires being comfortable with the command line, with various bioinformatics software, and a lot of tedious file management
-
-To address this issue, we propose an intuitive web interface that let’s scientists quickly generate novel designs, visualize them, and log results without any complicated file management and parameter tuning
+### See More:
+- [How the workflow works](https://github.com/patging/ProteinDesigner/blob/main/docs/WorkflowExplained.md)
+- [Gallery of features](https://github.com/patging/ProteinDesigner/blob/main/docs/Gallery.md)

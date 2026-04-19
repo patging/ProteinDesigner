@@ -143,7 +143,9 @@ export function DashboardPanel() {
         );
         return;
       }
-      const res = await fetch(`http://localhost:4000/me/${data.user.id}`);
+      const res = await fetch(
+        `${import.meta.env.VITE_API_URL}/me/${data.user.id}`,
+      );
       if (!res) {
         console.log("error fetching from our backend endpoint me");
         return;
@@ -267,7 +269,7 @@ function InnerTable({
     setViewerProtein(undefined);
 
     try {
-      const proxyUrl = `http://localhost:4000/api/blob-proxy?url=${encodeURIComponent(url)}`;
+      const proxyUrl = `${import.meta.env.VITE_API_URL}/api/blob-proxy?url=${encodeURIComponent(url)}`;
       const response = await fetch(proxyUrl, {
         method: "GET",
         credentials: "include",
@@ -620,7 +622,7 @@ function DashboardTable() {
         }
 
         const response = await fetch(
-          `http://localhost:4000/api/jobs?userId=${encodeURIComponent(data.user.id)}`,
+          `${import.meta.env.VITE_API_URL}/api/jobs?userId=${encodeURIComponent(data.user.id)}`,
           { method: "GET", credentials: "include" },
         );
 
