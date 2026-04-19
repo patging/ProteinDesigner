@@ -1,5 +1,13 @@
 import { useParams } from "react-router";
-import { Box, Typography, Button, Divider, Skeleton } from "@mui/material";
+import {
+  Box,
+  Typography,
+  Button,
+  Divider,
+  Skeleton,
+  ToggleButton,
+  ToggleButtonGroup,
+} from "@mui/material";
 import { grey } from "@mui/material/colors";
 import { ThemeProvider } from "@mui/material/styles";
 import DownloadOutlinedIcon from "@mui/icons-material/DownloadOutlined";
@@ -19,7 +27,14 @@ type JobResult = {
   designMethod: string;
   targetProtein: string;
   outputFileUrl: string;
+  outputFileUrls: string[];
   inputFileUrl: string;
+  jobParameters: {
+    contig: string | null;
+    numDesigns: string | null;
+    timeSteps: string | null;
+    stepScale: string | null;
+  };
 };
 
 function proxyUrl(blobUrl: string): string {
@@ -81,6 +96,7 @@ export function JobResults() {
   const [protein, setProtein] = useState<Protein | undefined>();
   const [viewerLoading, setViewerLoading] = useState(false);
   const [viewerError, setViewerError] = useState<string | null>(null);
+  const [selectedDesignIndex, setSelectedDesignIndex] = useState(0);
 
   // Fetch job metadata
   useEffect(() => {
@@ -103,6 +119,13 @@ export function JobResults() {
         const data = await res.json();
         if (!res.ok) throw new Error(data.message || res.statusText);
 
+        const outputFileUrls =
+          Array.isArray(data.outputFileUrls) && data.outputFileUrls.length > 0
+            ? data.outputFileUrls
+            : data.outputFileUrl
+              ? [data.outputFileUrl]
+              : [];
+
         setResult({
           jobId: data.jobId,
           dateCreated: data.createdAt
@@ -115,9 +138,17 @@ export function JobResults() {
           status: data.status,
           designMethod: data.designMethod ?? "RFDiffusion",
           targetProtein: data.targetProtein ?? "—",
-          outputFileUrl: data.outputFileUrl ?? "",
+          outputFileUrl: outputFileUrls[0] ?? "",
+          outputFileUrls,
           inputFileUrl: data.inputFileUrl ?? "",
+          jobParameters: {
+            contig: data.jobParameters?.contig ?? null,
+            numDesigns: data.jobParameters?.numDesigns ?? null,
+            timeSteps: data.jobParameters?.timeSteps ?? null,
+            stepScale: data.jobParameters?.stepScale ?? null,
+          },
         });
+        setSelectedDesignIndex(0);
       } catch (err: any) {
         setError(err.message || "Failed to load job results.");
       } finally {
@@ -132,7 +163,10 @@ export function JobResults() {
   useEffect(() => {
     if (!result) return;
 
-    const blobUrl = result.outputFileUrl || result.inputFileUrl;
+    const blobUrl =
+      result.outputFileUrls[selectedDesignIndex] ||
+      result.outputFileUrl ||
+      result.inputFileUrl;
     if (!blobUrl) return;
 
     const loadStructure = async () => {
@@ -166,15 +200,18 @@ export function JobResults() {
     };
 
     loadStructure();
-  }, [result]);
+  }, [result, selectedDesignIndex]);
 
   // Download designed PDB file
   const handleDownloadPdb = () => {
-    const blobUrl = result?.outputFileUrl || result?.inputFileUrl;
+    const blobUrl =
+      result?.outputFileUrls[selectedDesignIndex] ||
+      result?.outputFileUrl ||
+      result?.inputFileUrl;
     if (!blobUrl) return;
     const a = document.createElement("a");
     a.href = proxyUrl(blobUrl);
-    a.download = `${jobId}.pdb`;
+    a.download = `${jobId}_design_${selectedDesignIndex + 1}.pdb`;
     a.click();
   };
 
@@ -191,7 +228,10 @@ export function JobResults() {
     URL.revokeObjectURL(a.href);
   };
 
-  const structureAvailable = result?.outputFileUrl || result?.inputFileUrl;
+  const structureAvailable =
+    result?.outputFileUrls[selectedDesignIndex] ||
+    result?.outputFileUrl ||
+    result?.inputFileUrl;
 
   return (
     <ThemeProvider theme={DashboardTheme}>
@@ -239,8 +279,80 @@ export function JobResults() {
           >
             3D Structure
           </Typography>
+          {!!result?.outputFileUrls?.length && (
+            <Box sx={{ mb: "16px" }}>
+              <Typography sx={{ fontSize: "13px", color: grey[600], mb: 1 }}>
+                Select Design
+              </Typography>
+              <ToggleButtonGroup
+                value={selectedDesignIndex}
+                exclusive
+                onChange={(_, value) => {
+                  if (value !== null) {
+                    setSelectedDesignIndex(value);
+                  }
+                }}
+                size="small"
+                sx={{
+                  flexWrap: "wrap",
+                  gap: "8px",
+                  "& .MuiToggleButton-root": {
+                    textTransform: "none",
+                    borderRadius: "8px !important",
+                    borderColor: grey[300],
+                    color: grey[700],
+                    px: "12px",
+                  },
+                  "& .Mui-selected": {
+                    backgroundColor: `${grey[900]} !important`,
+                    color: "white !important",
+                  },
+                }}
+              >
+                {result.outputFileUrls.map((_, index) => (
+                  <ToggleButton key={index} value={index}>
+                    Design {index + 1}
+                  </ToggleButton>
+                ))}
+              </ToggleButtonGroup>
+            </Box>
+          )}
           <Box sx={{ height: 420, width: "100%", position: "relative" }}>
-            {protein && <Viewer proteins={[protein]} height={420} />}
+            {viewerLoading && (
+              <Box
+                sx={{
+                  width: "100%",
+                  height: "100%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Skeleton variant="rectangular" width="100%" height="100%" />
+              </Box>
+            )}
+            {!viewerLoading && viewerError && (
+              <Box
+                sx={{
+                  width: "100%",
+                  height: "100%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  border: "1px solid",
+                  borderColor: grey[200],
+                  borderRadius: "8px",
+                  px: "16px",
+                }}
+              >
+                <Typography sx={{ color: "error.main", fontSize: "14px" }}>
+                  {viewerError}
+                </Typography>
+              </Box>
+            )}
+            {!viewerLoading && !viewerError && protein && (
+              <Viewer proteins={[protein]} height={420} />
+            )}
           </Box>
 
           {/* Download */}
@@ -310,8 +422,23 @@ export function JobResults() {
             loading={loading}
           />
           <MetadataRow
-            label="Target Protein"
-            value={result?.targetProtein ?? null}
+            label="Contig"
+            value={result?.jobParameters.contig ?? null}
+            loading={loading}
+          />
+          <MetadataRow
+            label="Number of Designs"
+            value={result?.jobParameters.numDesigns ?? null}
+            loading={loading}
+          />
+          <MetadataRow
+            label="Timesteps"
+            value={result?.jobParameters.timeSteps ?? null}
+            loading={loading}
+          />
+          <MetadataRow
+            label="Step Scale"
+            value={result?.jobParameters.stepScale ?? null}
             loading={loading}
           />
         </Box>

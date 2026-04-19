@@ -155,14 +155,6 @@ function JobFormContent({ pdbFile, onFileChange }: JobFormContentProps) {
         Create New Design
       </Typography>
 
-      {/* Job Name */}
-      <JobFormField
-        label="Job Name"
-        placeholder="Enter job name"
-        value={jobName}
-        onChange={(e) => setJobName(e.target.value)}
-      />
-
       {/* PDB File Upload */}
       <Box>
         <Typography variant="h6" sx={{ fontSize: "12pt", mb: "8px" }}>
